@@ -6,3 +6,8 @@ export interface CategoryApi {
   createdAt: string
   updatedAt: string
 }
+
+export interface CategoryCreatePayload {
+  name: string
+  description?: string
+}
