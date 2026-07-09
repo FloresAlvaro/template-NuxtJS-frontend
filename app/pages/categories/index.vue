@@ -4,6 +4,8 @@ import { h, resolveComponent } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
 import type { CategoryApi } from '~/types/category'
 import CreateCategoryBtn from './components/CreateCategoryBtn.vue'
+import EditCategoryBtn from './components/EditCategoryBtn.vue'
+import ToggleCategoryStatusBtn from './components/ToggleCategoryStatusBtn.vue'
 
 const UBadge = resolveComponent('UBadge')
 
@@ -103,26 +105,11 @@ const columns: TableColumn<CategoryApi>[] = [
     <template #actions="{ row }">
         <div class="flex items-center gap-2">
             <!-- Botón Editar -->
-            <UTooltip text="Editar">
-                <UButton 
-                icon="i-heroicons-pencil-square" 
-                color="neutral" 
-                variant="ghost" 
-                class="rounded-full"
-                @click="handleEdit(row)"
-                />
-            </UTooltip>
+        <EditCategoryBtn :category="row.original" />
+            
 
             <!-- Botón Activar/Desactivar -->
-            <UTooltip :text="row.original.isActive ? 'Desactivar' : 'Activar'">
-                <UButton 
-                :icon="row.original.isActive ? 'i-heroicons-eye-slash' : 'i-heroicons-eye'" 
-                :color="row.original.isActive ? 'warning' : 'success'" 
-                variant="ghost" 
-                class="rounded-full"
-                @click="handleToggleStatus(row)"
-                />
-            </UTooltip>
+        <ToggleCategoryStatusBtn :category="row.original" />
         </div>
     </template>
 
