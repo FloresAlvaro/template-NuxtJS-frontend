@@ -1,7 +1,7 @@
-<!-- app/pages/categories/components/ToggleCategoryStatusBtn.vue -->
 <script setup lang="ts">
 import type { CategoryApi } from '~/types/category'
 import { useAppToast } from '~/composables/useAppToast'
+import { useModalAction } from '~/composables/useModalAction';
 
 const props = defineProps<{
   category: CategoryApi
@@ -11,30 +11,26 @@ const appToast = useAppToast()
 const { getApiErrorMessage } = useApiErrorMessage()
 const { open, isSaving, openModal, closeModal, startSaving, stopSaving } = useModalAction()
 
-// Determinamos el nuevo estado opuesto al actual
 const nextStatus = computed(() => !props.category.isActive)
 
 const handleToggleStatus = async () => {
   startSaving()
 
   try {
-    // Enviamos exclusivamente el valor booleano invertido a NestJS
     await $fetch(`/categories/${props.category.categoryId}`, {
       baseURL: useRuntimeConfig().public.apiBase,
-      method: 'PATCH', // o 'PATCH' según tu controlador de NestJS
+      method: 'PATCH',
       body: {
         isActive: nextStatus.value
       }
     })
 
-    // Disparamos el toast personalizado según el cambio de estado
     if (nextStatus.value) {
       appToast.success('¡Categoría Activada!', `La categoría "${props.category.name}" ahora está activa.`)
     } else {
       appToast.warn('Categoría Desactivada', `La categoría "${props.category.name}" ha sido desactivada.`)
     }
-    
-    // Refrescamos la tabla principal automáticamente
+
     await refreshNuxtData()
     closeModal()
   } catch (error) {
@@ -56,7 +52,6 @@ const handleToggleStatus = async () => {
       class: 'rounded-full'
     }"
   >
-    <!-- Botón dinámico del ojo (Cambia de icono, color y tooltip según el estado) -->
     <UTooltip :text="category.isActive ? 'Desactivar' : 'Activar'">
       <UButton 
         :icon="category.isActive ? 'i-lucide-eye-off' : 'i-lucide-eye'" 
@@ -70,7 +65,6 @@ const handleToggleStatus = async () => {
 
     <template #body>
       <div class="space-y-4 p-2 text-center sm:text-left">
-        <!-- Mensaje de confirmación limpio sin inputs -->
         <p class="text-sm text-gray-600 dark:text-gray-300">
           ¿Estás seguro de que deseas 
           <span class="font-bold" :class="category.isActive ? 'text-amber-500' : 'text-green-500'">
@@ -83,7 +77,6 @@ const handleToggleStatus = async () => {
           Nota: Los productos asignados a esta categoría podrían dejar de mostrarse en la tienda.
         </p>
 
-        <!-- Botones de Acción -->
         <div class="flex justify-end gap-2 pt-4">
           <UButton type="button" color="neutral" variant="ghost" @click="closeModal">
             Cancelar

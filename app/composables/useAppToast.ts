@@ -1,8 +1,6 @@
-// composables/useAppToast.ts
 export const useAppToast = () => {
   const toast = useToast()
 
-  // Toast para casos Exitosos (Verde)
   const success = (title: string, description?: string) => {
     toast.add({
       title,
@@ -12,7 +10,6 @@ export const useAppToast = () => {
     })
   }
 
-  // Toast para Errores (Rojo)
   const error = (title: string, description?: string) => {
     toast.add({
       title,
@@ -22,7 +19,6 @@ export const useAppToast = () => {
     })
   }
 
-  // Toast para Advertencias / Info (Amarillo/Azul si lo deseas)
   const warn = (title: string, description?: string) => {
     toast.add({
       title,

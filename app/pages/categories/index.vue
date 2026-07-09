@@ -1,4 +1,3 @@
-<!-- app/pages/categories/index.vue -->
 <script setup lang="ts">
 import { h, resolveComponent } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
@@ -24,19 +23,6 @@ const formatDate = (dateString: string) => {
     hour: '2-digit',
     minute: '2-digit'
   }).format(date)
-}
-
-// Funciones para manejar las acciones (puedes conectar tus modales o fetch aquí)
-const handleEdit = (row: any) => {
-  console.log('Editar categoría con ID:', row.original.categoryId)
-}
-
-const handleToggleStatus = (row: any) => {
-  console.log('Cambiar estado de categoría con ID:', row.original.categoryId)
-}
-
-const handleDelete = (row: any) => {
-  console.log('Eliminar categoría con ID:', row.original.categoryId)
 }
 
 const columns: TableColumn<CategoryApi>[] = [
@@ -76,7 +62,6 @@ const columns: TableColumn<CategoryApi>[] = [
     header: 'Última Actualización',
     cell: ({ row }) => formatDate(row.getValue('updatedAt') as string)
   },
-  // 1. REGISTRAMOS LA COLUMNA DE ACCIONES AL FINAL
   {
     id: 'actions',
     header: 'Acciones'
@@ -99,19 +84,13 @@ const columns: TableColumn<CategoryApi>[] = [
       Error: {{ error.message }}
     </div>
 
-    <!-- 2. PASAMOS LA NUEVA CONFIGURACIÓN AL COMPONENTE GENÉRICO -->
     <GenericTable v-else-if="categories?.length" :data="categories" :columns="columns">
-    
-    <template #actions="{ row }">
+      <template #actions="{ row }">
         <div class="flex items-center gap-2">
-            <!-- Botón Editar -->
-        <EditCategoryBtn :category="row.original" />
-            
-
-            <!-- Botón Activar/Desactivar -->
-        <ToggleCategoryStatusBtn :category="row.original" />
+          <EditCategoryBtn :category="row.original" />
+          <ToggleCategoryStatusBtn :category="row.original" />
         </div>
-    </template>
+      </template>
 
     </GenericTable>
 

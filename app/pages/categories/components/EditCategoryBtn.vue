@@ -1,9 +1,8 @@
-<!-- app/pages/categories/components/EditCategoryBtn.vue -->
 <script setup lang="ts">
 import type { CategoryApi } from '~/types/category'
 import { useAppToast } from '~/composables/useAppToast'
+import { useModalAction } from '~/composables/useModalAction';
 
-// 1. Recibimos la categoría que se quiere editar desde la tabla
 const props = defineProps<{
   category: CategoryApi
 }>()
@@ -12,13 +11,11 @@ const appToast = useAppToast()
 const { getApiErrorMessage } = useApiErrorMessage()
 const { open, isSaving, submitError, openModal, closeModal, startSaving, stopSaving } = useModalAction()
 
-// Estado reactivo local para el formulario
 const state = reactive({
   name: '',
   description: ''
 })
 
-// 2. Cada vez que el modal se abra, cargamos los datos de la categoría elegida
 watch(() => open.value, (isOpen) => {
   if (isOpen && props.category) {
     state.name = props.category.name
@@ -31,7 +28,6 @@ const handleSubmit = async () => {
   startSaving()
 
   try {
-    // 3. Enviamos PATCH usando el categoryId dinámico
     await $fetch(`/categories/${props.category.categoryId}`, {
       baseURL: useRuntimeConfig().public.apiBase,
       method: 'PATCH',
@@ -42,8 +38,6 @@ const handleSubmit = async () => {
     })
 
     appToast.success('¡Categoría actualizada!', `La categoría "${state.name}" se editó correctamente.`)
-    
-    // Refrescamos los datos de la tabla global
     await refreshNuxtData()
     closeModal()
   } catch (error) {
@@ -66,7 +60,6 @@ const handleSubmit = async () => {
       class: 'rounded-full'
     }"
   >
-    <!-- El botón del lápiz que se renderizará dentro de la tabla -->
     <UTooltip text="Editar">
       <UButton 
         icon="i-lucide-pencil" 

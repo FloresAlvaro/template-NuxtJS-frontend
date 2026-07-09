@@ -11,10 +11,6 @@ export const useModalAction = () => {
     open.value = false
   }
 
-  const resetError = () => {
-    submitError.value = ''
-  }
-
   const startSaving = () => {
     submitError.value = ''
     isSaving.value = true
@@ -30,7 +26,6 @@ export const useModalAction = () => {
     submitError,
     openModal,
     closeModal,
-    resetError,
     startSaving,
     stopSaving
   }

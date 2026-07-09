@@ -1,7 +1,7 @@
-<!-- app/pages/categories/components/CreateCategoryBtn.vue -->
 <script setup lang="ts">
+import { useModalAction } from '#imports'
 import { useAppToast } from '~/composables/useAppToast'
-// 1. Instanciamos el Toast global que creamos antes
+
 const appToast = useAppToast()
 const { getApiErrorMessage } = useApiErrorMessage()
 const { open, isSaving, submitError, openModal, closeModal, startSaving, stopSaving } = useModalAction()
@@ -31,7 +31,6 @@ const handleSubmit = async () => {
       body: payload
     })
 
-    // 2. Si todo sale bien, lanzamos el Toast de Éxito (Verde)
     appToast.success('¡Categoría creada!', `La categoría "${state.name}" se guardó correctamente.`)
 
     await refreshNuxtData()
@@ -42,9 +41,7 @@ const handleSubmit = async () => {
   } catch (error) {
     submitError.value = getApiErrorMessage(error, 'No se pudo guardar la categoría')
 
-    // 3. Lanzamos el Toast de Error (Rojo) indicando el problema de forma flotante
     appToast.error('Error al guardar', submitError.value)
-    
   } finally {
     stopSaving()
   }
