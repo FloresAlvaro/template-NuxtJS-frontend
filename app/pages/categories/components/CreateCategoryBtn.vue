@@ -1,13 +1,10 @@
 <!-- app/pages/categories/components/CreateCategoryBtn.vue -->
 <script setup lang="ts">
-import type { CategoryCreatePayload } from '~/types/category'
-import { useAppToast } from '~/composable/useAppToast'
+import { useAppToast } from '~/composables/useAppToast'
 // 1. Instanciamos el Toast global que creamos antes
 const appToast = useAppToast()
-
-const open = ref(false)
-const isSaving = ref(false)
-const submitError = ref('')
+const { getApiErrorMessage } = useApiErrorMessage()
+const { open, isSaving, submitError, openModal, closeModal, startSaving, stopSaving } = useModalAction()
 
 type CategoryFormState = {
   name: string
@@ -20,8 +17,7 @@ const state = reactive<CategoryFormState>({
 })
 
 const handleSubmit = async () => {
-  submitError.value = ''
-  isSaving.value = true
+  startSaving()
 
   try {
     const payload = {
@@ -42,29 +38,15 @@ const handleSubmit = async () => {
 
     state.name = ''
     state.description = ''
-    open.value = false
+    closeModal()
   } catch (error) {
-    // Procesamos el error del backend...
-    if (error && typeof error === 'object' && 'data' in error) {
-      const apiError = error as { data?: unknown; statusMessage?: string; message?: string }
-
-      if (typeof apiError.data === 'string') {
-        submitError.value = apiError.data
-      } else if (apiError.data && typeof apiError.data === 'object' && 'message' in apiError.data) {
-        const message = (apiError.data as { message?: string | string[] }).message
-        submitError.value = Array.isArray(message) ? message.join(', ') : message ?? 'No se pudo guardar la categoría'
-      } else {
-        submitError.value = apiError.statusMessage ?? apiError.message ?? 'No se pudo guardar la categoría'
-      }
-    } else {
-      submitError.value = error instanceof Error ? error.message : 'No se pudo guardar la categoría'
-    }
+    submitError.value = getApiErrorMessage(error, 'No se pudo guardar la categoría')
 
     // 3. Lanzamos el Toast de Error (Rojo) indicando el problema de forma flotante
     appToast.error('Error al guardar', submitError.value)
     
   } finally {
-    isSaving.value = false
+    stopSaving()
   }
 }
 </script>
@@ -79,7 +61,7 @@ const handleSubmit = async () => {
       class: 'rounded-full'
     }"
   >
-    <AppButton icon="i-heroicons-plus" preset="primary" @click="open = true">
+    <AppButton icon="i-heroicons-plus" preset="primary" @click="openModal">
       Nueva Categoría
     </AppButton>
 
@@ -107,7 +89,7 @@ const handleSubmit = async () => {
         </UFormField>
 
         <div class="flex justify-end gap-2 pt-4">
-          <UButton type="button" color="neutral" variant="ghost" @click="open = false;">
+          <UButton type="button" color="neutral" variant="ghost" @click="closeModal">
             Cancelar
           </UButton>
           

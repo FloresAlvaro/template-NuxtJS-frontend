@@ -1,29 +1,21 @@
 <!-- app/pages/categories/components/ToggleCategoryStatusBtn.vue -->
 <script setup lang="ts">
 import type { CategoryApi } from '~/types/category'
-import { useAppToast } from '~/composable/useAppToast'
+import { useAppToast } from '~/composables/useAppToast'
 
 const props = defineProps<{
   category: CategoryApi
 }>()
 
 const appToast = useAppToast()
-const open = ref(false)
-const isSaving = ref(false)
+const { getApiErrorMessage } = useApiErrorMessage()
+const { open, isSaving, openModal, closeModal, startSaving, stopSaving } = useModalAction()
 
 // Determinamos el nuevo estado opuesto al actual
 const nextStatus = computed(() => !props.category.isActive)
 
-const openModal = () => {
-  open.value = true
-}
-
-const closeModal = () => {
-  open.value = false
-}
-
 const handleToggleStatus = async () => {
-  isSaving.value = true
+  startSaving()
 
   try {
     // Enviamos exclusivamente el valor booleano invertido a NestJS
@@ -45,11 +37,11 @@ const handleToggleStatus = async () => {
     // Refrescamos la tabla principal automáticamente
     await refreshNuxtData()
     closeModal()
-  } catch (error: any) {
-    const errorMsg = error.data?.message || 'No se pudo cambiar el estado de la categoría'
+  } catch (error) {
+    const errorMsg = getApiErrorMessage(error, 'No se pudo cambiar el estado de la categoría')
     appToast.error('Error de actualización', errorMsg)
   } finally {
-    isSaving.value = false
+    stopSaving()
   }
 }
 </script>

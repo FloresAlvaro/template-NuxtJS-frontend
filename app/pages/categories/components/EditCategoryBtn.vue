@@ -1,7 +1,7 @@
 <!-- app/pages/categories/components/EditCategoryBtn.vue -->
 <script setup lang="ts">
 import type { CategoryApi } from '~/types/category'
-import { useAppToast } from '~/composable/useAppToast'
+import { useAppToast } from '~/composables/useAppToast'
 
 // 1. Recibimos la categoría que se quiere editar desde la tabla
 const props = defineProps<{
@@ -9,23 +9,14 @@ const props = defineProps<{
 }>()
 
 const appToast = useAppToast()
-const open = ref(false)
-const isSaving = ref(false)
-const submitError = ref('')
+const { getApiErrorMessage } = useApiErrorMessage()
+const { open, isSaving, submitError, openModal, closeModal, startSaving, stopSaving } = useModalAction()
 
 // Estado reactivo local para el formulario
 const state = reactive({
   name: '',
   description: ''
 })
-
-const openModal = () => {
-  open.value = true
-}
-
-const closeModal = () => {
-  open.value = false
-}
 
 // 2. Cada vez que el modal se abra, cargamos los datos de la categoría elegida
 watch(() => open.value, (isOpen) => {
@@ -37,8 +28,7 @@ watch(() => open.value, (isOpen) => {
 })
 
 const handleSubmit = async () => {
-  submitError.value = ''
-  isSaving.value = true
+  startSaving()
 
   try {
     // 3. Enviamos PATCH usando el categoryId dinámico
@@ -57,24 +47,11 @@ const handleSubmit = async () => {
     await refreshNuxtData()
     closeModal()
   } catch (error) {
-    if (error && typeof error === 'object' && 'data' in error) {
-      const apiError = error as { data?: unknown; statusMessage?: string; message?: string }
-
-      if (typeof apiError.data === 'string') {
-        submitError.value = apiError.data
-      } else if (apiError.data && typeof apiError.data === 'object' && 'message' in apiError.data) {
-        const message = (apiError.data as { message?: string | string[] }).message
-        submitError.value = Array.isArray(message) ? message.join(', ') : message ?? 'No se pudo actualizar la categoría'
-      } else {
-        submitError.value = apiError.statusMessage ?? apiError.message ?? 'No se pudo actualizar la categoría'
-      }
-    } else {
-      submitError.value = error instanceof Error ? error.message : 'No se pudo actualizar la categoría'
-    }
+    submitError.value = getApiErrorMessage(error, 'No se pudo actualizar la categoría')
 
     appToast.error('Error al actualizar', submitError.value)
   } finally {
-    isSaving.value = false
+    stopSaving()
   }
 }
 </script>
