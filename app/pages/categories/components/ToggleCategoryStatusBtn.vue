@@ -17,13 +17,17 @@ const handleToggleStatus = async () => {
   startSaving()
 
   try {
-    await $fetch(`/categories/${props.category.categoryId}`, {
-      baseURL: useRuntimeConfig().public.apiBase,
-      method: 'PATCH',
-      body: {
-        isActive: nextStatus.value
-      }
-    })
+    if (props.category.isActive) {
+      await $fetch(`/categories/${props.category.categoryId}`, {
+        baseURL: useRuntimeConfig().public.apiBase,
+        method: 'DELETE',
+      })
+    } else {
+      await $fetch(`/categories/${props.category.categoryId}/activate`, {
+        baseURL: useRuntimeConfig().public.apiBase,
+        method: 'PATCH',
+      })
+    }
 
     if (nextStatus.value) {
       appToast.success('¡Categoría Activada!', `La categoría "${props.category.name}" ahora está activa.`)
