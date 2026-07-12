@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { CategoryApi } from '~/types/category'
 import { useAppToast } from '~/composables/useAppToast'
-import { useModalAction } from '~/composables/useModalAction';
+import { useModalAction } from '~/composables/useModalAction'
 
 const props = defineProps<{
   category: CategoryApi

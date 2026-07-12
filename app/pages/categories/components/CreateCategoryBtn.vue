@@ -80,7 +80,7 @@ const handleSubmit = async () => {
           <UTextarea 
             v-model="state.description" 
             placeholder="Escribe una breve descripción..." 
-            class="w-full resize-none!"
+            class="w-full !resize-none"
             :rows="4"
           />
         </UFormField>

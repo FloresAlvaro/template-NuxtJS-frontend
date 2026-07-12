@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { CategoryApi } from '~/types/category'
 import { useAppToast } from '~/composables/useAppToast'
-import { useModalAction } from '~/composables/useModalAction';
+import { useModalAction } from '~/composables/useModalAction'
 
 const props = defineProps<{
   category: CategoryApi
@@ -87,7 +87,7 @@ const handleSubmit = async () => {
         <UFormField label="Descripción">
           <UTextarea 
             v-model="state.description" 
-            class="w-full resize-none!"
+            class="w-full !resize-none"
             :rows="4"
           />
         </UFormField>

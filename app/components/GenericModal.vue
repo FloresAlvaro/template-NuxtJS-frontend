@@ -9,7 +9,7 @@ const isOpen = defineModel<boolean>({ default: false })
 
 <template>
   <UModal
-    v-model="isOpen"
+    v-model:open="isOpen"
     :title="title"
     :close="{
       color: 'primary',
