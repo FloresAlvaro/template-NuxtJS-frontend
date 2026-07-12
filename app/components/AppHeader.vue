@@ -10,9 +10,14 @@ const items = computed<NavigationMenuItem[]>(() => [
     active: route.path === '/'
   },
   {
+    label: 'Categorías',
+    to: '/categories',
+    active: route.path.startsWith('/categories')
+  },
+  {
     label: 'Productos',
-    to: '/productos',
-    active: route.path.startsWith('/productos')
+    to: '/products',
+    active: route.path.startsWith('/products')
   }
 ])
 </script>
