@@ -1,5 +1,6 @@
 <script setup lang="ts">
 interface ShopProduct {
+  quantity: number
   productId: number
   name: string
   sku: string
@@ -24,7 +25,10 @@ const totalPages = computed(() => Math.max(1, Math.ceil((data.value?.total ?? 0)
         ><h2 class="font-semibold text-lg">{{ product.name }}</h2>
         <p class="text-sm text-muted">{{ product.sku }}</p>
         <p class="my-3">{{ product.description }}</p>
-        <p class="font-bold">Precio: {{ product.salePrice }}</p></UCard
+        <p class="font-bold">Precio: {{ product.salePrice }}</p>
+        <p class="mt-2 text-sm">
+          {{ product.quantity > 0 ? `${product.quantity} unidades disponibles` : 'Agotado' }}
+        </p></UCard
       >
     </div>
     <p v-else>No hay productos disponibles.</p>

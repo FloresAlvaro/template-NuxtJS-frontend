@@ -85,6 +85,38 @@ Crea el primer administrador con el comando interactivo documentado en el README
 
 Validaciones: `pnpm typecheck` y `pnpm build`.
 
+## Inventario
+
+La tabla de Productos muestra stock disponible y avisos de agotado o stock bajo.
+El botón Inventario permite consultar el historial paginado. Administradores pueden
+registrar entradas, salidas y ajustes por conteo, además de definir el stock mínimo;
+vendedores solo consultan. El catálogo público muestra las unidades disponibles.
+
+Actualiza el backend y aplica la migración de inventario antes de usar esta pantalla.
+Los productos empiezan en cero: registra una entrada para cargar existencias iniciales.
+Un ajuste usa la cantidad final contada y detecta si el saldo cambió desde la consulta.
+Si ocurre un conflicto, pulsa Actualizar y revisa la cantidad antes de reintentar.
+Las ventas registradas descuentan stock automáticamente. Las reservas siguen pendientes.
+
+## Clientes y ventas
+
+Administradores y vendedores tienen acceso a Clientes y Ventas en el menú. Clientes
+permite búsqueda, alta sin cuenta y consulta de sus ventas; ADMIN también edita o
+desactiva perfiles. Nueva venta permite seleccionar o crear cliente, buscar por
+SKU/nombre, agregar productos y confirmar cantidades y total. El backend calcula
+los importes y descuenta stock; la interfaz conserva el identificador del envío
+para evitar duplicados en reintentos. Cada venta tiene detalle histórico y puede
+abrirse desde los movimientos de inventario relacionados.
+
+Aplica las migraciones y actualiza el backend antes de utilizar estas pantallas.
+El detalle permite cobros manuales para ADMIN/SELLER y devoluciones, anulaciones
+y reembolsos para ADMIN. Muestra total original/vigente, saldo y reembolso pendiente,
+y el historial de operaciones. Los reintentos conservan su UUID, incluso después
+de recargar la pestaña si el navegador permite sessionStorage.
+Registrar un cobro documenta dinero recibido fuera de la aplicación; no procesa
+pagos bancarios. Anular o devolver productos repone stock pero no reembolsa dinero
+automáticamente.
+
 ## Código compartido
 
 - `useApi`: cliente para peticiones puntuales; resuelve el baseURL y reenvía la cookie de la petición actual durante SSR, sin compartir cookies entre usuarios.

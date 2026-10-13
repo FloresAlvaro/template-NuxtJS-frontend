@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { activeStatusColumn } from '~/utils/active-status-column'
 const api = useApi()
 const auth = useAuth()
 import type { BreadcrumbItem, TableColumn } from '@nuxt/ui'
@@ -15,15 +16,26 @@ const breadcrumbs: BreadcrumbItem[] = [
 const page = ref(1)
 const limit = ref('20')
 const status = ref('all')
+const availability = ref('all')
 const subFilter = ref('')
+const searchInput = ref('')
+const search = ref('')
+let searchTimer: ReturnType<typeof setTimeout> | undefined
+watch(searchInput, (value) => {
+  clearTimeout(searchTimer)
+  searchTimer = setTimeout(() => { search.value = value.trim() }, 300)
+})
+onBeforeUnmount(() => clearTimeout(searchTimer))
 const query = computed(() => ({
   page: page.value,
   limit: Number(limit.value),
   status: status.value,
+  availability: availability.value,
+  search: search.value || undefined,
   subCategoryId: subFilter.value ? Number(subFilter.value) : undefined,
 }))
 watch(
-  [limit, status, subFilter],
+  [limit, status, subFilter, search, availability],
   () => {
     page.value = 1
   },
@@ -66,7 +78,7 @@ const activeSubs = computed(() =>
     (s) => s.isActive && categories.value?.some((c) => c.categoryId === s.categoryId && c.isActive),
   ),
 )
-const columns: TableColumn<ProductApi>[] = [
+const productColumns: TableColumn<ProductApi>[] = [
   { accessorKey: 'sku', header: 'SKU' },
   { accessorKey: 'name', header: 'Producto' },
   {
@@ -81,13 +93,18 @@ const columns: TableColumn<ProductApi>[] = [
   },
   ...(auth.isAdmin.value ? [{ accessorKey: 'cost', header: 'Costo' }] : []),
   { accessorKey: 'salePrice', header: 'Precio de venta' },
-  {
-    accessorKey: 'isActive',
-    header: 'Estado',
-    cell: ({ row }) => (row.original.isActive ? 'Activo' : 'Inactivo'),
-  },
+  { accessorKey: 'quantity', header: 'Stock disponible' },
+  { id: 'stock', header: 'Disponibilidad' },
+  activeStatusColumn<ProductApi>(false),
   { id: 'actions', header: 'Acciones' },
 ]
+const columns: TableColumn<ProductApi>[] = productColumns.map((column) => ({
+  ...column,
+  meta: {
+    ...column.meta,
+    class: { ...column.meta?.class, th: 'text-center', td: 'text-center' },
+  },
+}))
 
 const formOpen = ref(false)
 const editing = ref<ProductApi | null>(null)
@@ -197,6 +214,13 @@ const {
   refresh: reloadProducts,
 })
 const detailOpen = ref(false)
+const inventoryOpen = ref(false)
+const inventorySaving = ref(false)
+const inventoryProduct = ref<ProductApi | null>(null)
+function openInventory(product: ProductApi) {
+  inventoryProduct.value = product
+  inventoryOpen.value = true
+}
 const detail = ref<ProductApi | null>(null)
 const detailLoading = ref(false)
 const detailError = ref('')
@@ -231,7 +255,10 @@ async function retry() {
         >Nuevo producto</UButton
       >
     </div>
-    <div class="grid gap-3 sm:grid-cols-3">
+    <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+      <UFormField label="Buscar producto">
+        <UInput v-model="searchInput" icon="i-lucide-search" placeholder="SKU o nombre del producto" :maxlength="150" class="w-full" :ui="{ base: 'h-10' }" aria-label="Buscar por SKU o nombre del producto" />
+      </UFormField>
       <label class="space-y-1 text-sm"
         ><span class="block font-medium">Subcategoría</span>
         <select v-model="subFilter" class="product-select">
@@ -252,6 +279,15 @@ async function retry() {
           <option value="all">Todos</option>
           <option value="active">Activos</option>
           <option value="inactive">Inactivos</option>
+        </select>
+      </label>
+      <label class="space-y-1 text-sm">
+        <span class="block font-medium">Disponibilidad</span>
+        <select v-model="availability" class="product-select">
+          <option value="all">Todas</option>
+          <option value="AVAILABLE">Disponible</option>
+          <option value="LOW_STOCK">Stock bajo</option>
+          <option value="OUT_OF_STOCK">Agotado</option>
         </select>
       </label>
       <label class="space-y-1 text-sm"
@@ -288,8 +324,35 @@ async function retry() {
       </UAlert>
       <p v-if="pending" role="status" class="p-4 text-muted">Cargando productos...</p>
       <GenericTable v-else-if="products?.items.length" :data="products.items" :columns="columns">
+        <template #stock="{ row }">
+          <UBadge
+            :color="
+              row.original.quantity === 0
+                ? 'error'
+                : row.original.quantity <= row.original.minStock
+                  ? 'warning'
+                  : 'success'
+            "
+          >
+            {{
+              row.original.quantity === 0
+                ? 'Agotado'
+                : row.original.quantity <= row.original.minStock
+                  ? 'Stock bajo'
+                  : 'Disponible'
+            }}
+          </UBadge>
+        </template>
         <template #actions="{ row }"
-          ><div class="flex gap-2">
+          ><div class="flex items-center justify-center gap-2">
+            <UButton
+              icon="i-lucide-boxes"
+              color="neutral"
+              variant="soft"
+              :aria-label="`Inventario de ${row.original.name}`"
+              @click="openInventory(row.original)"
+              >Inventario</UButton
+            >
             <UButton
               icon="i-lucide-eye"
               color="neutral"
@@ -529,6 +592,10 @@ async function retry() {
           >
           <dt class="font-medium">Precio de venta</dt>
           <dd>{{ detail.salePrice }}</dd>
+          <dt class="font-medium">Stock disponible</dt>
+          <dd>{{ detail.quantity }}</dd>
+          <dt class="font-medium">Stock mínimo</dt>
+          <dd>{{ detail.minStock }}</dd>
           <dt class="font-medium">Estado</dt>
           <dd>{{ detail.isActive ? 'Activo' : 'Inactivo' }}</dd>
           <dt class="font-medium">Descripción</dt>
@@ -536,6 +603,23 @@ async function retry() {
             {{ detail.description || '—' }}
           </dd>
         </dl>
+      </template>
+    </UModal>
+    <UModal
+      v-model:open="inventoryOpen"
+      title="Inventario del producto"
+      :dismissible="!inventorySaving"
+      :close="!inventorySaving"
+      :ui="{ content: 'sm:max-w-2xl' }"
+    >
+      <template #body>
+        <ProductInventory
+          v-if="inventoryOpen && inventoryProduct"
+          :key="inventoryProduct.productId"
+          :product="inventoryProduct"
+          @changed="reloadProducts"
+          @busy="inventorySaving = $event"
+        />
       </template>
     </UModal>
   </div>

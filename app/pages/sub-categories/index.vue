@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { activeStatusColumn } from '~/utils/active-status-column'
 const api = useApi()
 const auth = useAuth()
 import type { BreadcrumbItem, TableColumn } from '@nuxt/ui'
@@ -82,11 +83,7 @@ const columns: TableColumn<SubCategoryApi>[] = [
     header: 'Descripción',
     cell: ({ row }) => row.original.description || '—',
   },
-  {
-    accessorKey: 'isActive',
-    header: 'Estado',
-    cell: ({ row }) => (row.original.isActive ? 'Activa' : 'Inactiva'),
-  },
+  activeStatusColumn<SubCategoryApi>(true),
   { id: 'actions', header: 'Acciones' },
 ]
 function setFilter(field: 'categoryId' | 'status', event: Event) {

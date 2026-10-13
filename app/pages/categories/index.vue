@@ -1,13 +1,12 @@
 <script setup lang="ts">
+import { activeStatusColumn } from '~/utils/active-status-column'
 const auth = useAuth()
-import { h, resolveComponent } from 'vue'
+
 import type { BreadcrumbItem, TableColumn } from '@nuxt/ui'
 import type { CategoryApi } from '~/types/category'
 import CreateCategoryBtn from '~/components/categories/CreateCategoryBtn.vue'
 import EditCategoryBtn from '~/components/categories/EditCategoryBtn.vue'
 import ToggleCategoryStatusBtn from '~/components/categories/ToggleCategoryStatusBtn.vue'
-
-const UBadge = resolveComponent('UBadge')
 
 const breadcrumbs: BreadcrumbItem[] = [
   { label: 'Inicio', icon: 'i-lucide-house', to: '/' },
@@ -42,35 +41,28 @@ const columns: TableColumn<CategoryApi>[] = [
     accessorKey: 'description',
     header: 'Descripción',
   },
-  {
-    accessorKey: 'isActive',
-    header: 'Estado',
-    cell: ({ row }) => {
-      const isActive = row.getValue('isActive') as boolean
-      const color = isActive ? ('success' as const) : ('neutral' as const)
-
-      return h(UBadge, { class: 'capitalize', variant: 'subtle', color }, () =>
-        isActive ? 'Activa' : 'Inactiva',
-      )
-    },
-  },
+  activeStatusColumn<CategoryApi>(true),
   {
     accessorKey: 'createdAt',
     header: 'Fecha de Creación',
+    meta: { class: { th: 'text-center', td: 'text-center' } },
     cell: ({ row }) => formatDate(row.getValue('createdAt') as string),
   },
   {
     accessorKey: 'updatedAt',
     header: 'Última Actualización',
+    meta: { class: { th: 'text-center', td: 'text-center' } },
     cell: ({ row }) => formatDate(row.getValue('updatedAt') as string),
   },
   {
     id: 'subcategories',
     header: 'Subcategorías',
+    meta: { class: { th: 'text-center', td: 'text-center' } },
   },
   {
     id: 'actions',
     header: 'Acciones',
+    meta: { class: { th: 'text-center', td: 'text-center' } },
   },
 ]
 </script>
@@ -105,7 +97,7 @@ const columns: TableColumn<CategoryApi>[] = [
         </UButton>
       </template>
       <template #actions="{ row }">
-        <div class="flex items-center gap-2">
+        <div class="flex items-center justify-center gap-2">
           <EditCategoryBtn v-if="auth.isAdmin.value" :category="row.original" />
           <ToggleCategoryStatusBtn v-if="auth.isAdmin.value" :category="row.original" />
         </div>

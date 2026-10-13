@@ -5,7 +5,7 @@ const route = useRoute(), menuOpen = ref(false), logoutError = ref('')
 watch(() => route.fullPath, () => { menuOpen.value = false })
 const items = computed<NavigationMenuItem[]>(() => [
   { label: 'Inicio', to: '/' }, { label: 'Catálogo', to: '/shop' },
-  ...(auth.isStaff.value ? [{ label: 'Categorías', to: '/categories' }, { label: 'Subcategorías', to: '/sub-categories' }, { label: 'Productos', to: '/products' }] : []),
+  ...(auth.isStaff.value ? [{ label: 'Categorías', to: '/categories' }, { label: 'Subcategorías', to: '/sub-categories' }, { label: 'Productos', to: '/products' }, { label: 'Clientes', to: '/customers' }, { label: 'Ventas', to: '/sales' }] : []),
   ...(auth.isAdmin.value ? [{ label: 'Usuarios', to: '/users' }] : []),
   ...(auth.user.value ? [{ label: 'Mi cuenta', to: '/account' }] : [{ label: 'Ingresar', to: '/login' }])
 ])

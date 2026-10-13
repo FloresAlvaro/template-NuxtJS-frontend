@@ -1,4 +1,7 @@
 export interface ProductApi {
+  quantity: number
+  minStock: number
+  stockStatus: 'OUT_OF_STOCK' | 'LOW_STOCK' | 'AVAILABLE'
   productId: number
   subCategoryId: number
   name: string
@@ -18,4 +21,3 @@ export interface ProductPage {
   page: number
   limit: number
 }
-

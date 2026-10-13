@@ -115,7 +115,7 @@ async function reset() {
             <th class="p-3">Nombre</th>
             <th class="p-3">Correo</th>
             <th class="p-3">Rol</th>
-            <th class="p-3">Estado</th>
+            <th class="p-3 text-center">Estado</th>
             <th class="p-3">Acciones</th>
           </tr>
         </thead>
@@ -124,7 +124,7 @@ async function reset() {
             <td class="p-3">{{ user.name }}</td>
             <td class="p-3">{{ user.email }}</td>
             <td class="p-3">{{ labels[user.role] }}</td>
-            <td class="p-3">{{ user.isActive ? 'Activo' : 'Inactivo' }}</td>
+            <td class="p-3 text-center"><ActiveStatusBadge :active="user.isActive" /></td>
             <td class="p-3">
               <div class="flex gap-2">
                 <UButton
