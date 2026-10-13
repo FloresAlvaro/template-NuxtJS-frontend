@@ -5,8 +5,9 @@ export default defineNuxtConfig({
   modules: ['@nuxt/ui','@nuxt/icon', '@nuxt/fonts', '@nuxt/image'],
   css: ['~/assets/css/main.css'],
   runtimeConfig: {
+    backendApiBase: 'http://localhost:3001/api',
     public: {
-      apiBase: 'http://localhost:3001/api'
+      apiBase: '/api'
     }
   }
 })

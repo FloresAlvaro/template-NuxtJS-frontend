@@ -1,10 +1,10 @@
 <script setup lang="ts">
+const api = useApi()
 import { useModalAction } from '#imports'
 import { useAppToast } from '~/composables/useAppToast'
 
 const appToast = useAppToast()
-const { getApiErrorMessage } = useApiErrorMessage()
-const { open, isSaving, submitError, openModal, closeModal, startSaving, stopSaving } = useModalAction()
+const { open, isSaving, submitError, openModal, closeModal, run } = useModalAction()
 
 type CategoryFormState = {
   name: string
@@ -13,22 +13,20 @@ type CategoryFormState = {
 
 const state = reactive<CategoryFormState>({
   name: '',
-  description: ''
+  description: '',
 })
 
 const handleSubmit = async () => {
-  startSaving()
-
-  try {
+  if (isSaving.value) return
+  const success = await run(async () => {
     const payload = {
       name: state.name.trim(),
-      description: state.description.trim() || undefined
+      description: state.description.trim() || undefined,
     }
 
-    await $fetch('/categories', {
-      baseURL: useRuntimeConfig().public.apiBase,
+    await api('/categories', {
       method: 'POST',
-      body: payload
+      body: payload,
     })
 
     appToast.success('¡Categoría creada!', `La categoría "${state.name}" se guardó correctamente.`)
@@ -38,24 +36,19 @@ const handleSubmit = async () => {
     state.name = ''
     state.description = ''
     closeModal()
-  } catch (error) {
-    submitError.value = getApiErrorMessage(error, 'No se pudo guardar la categoría')
-
-    appToast.error('Error al guardar', submitError.value)
-  } finally {
-    stopSaving()
-  }
+  }, 'No se pudo guardar la categoría')
+  if (!success) appToast.error('Error al guardar', submitError.value)
 }
 </script>
 
 <template>
-  <UModal 
-    v-model:open="open" 
+  <UModal
+    v-model:open="open"
     title="Crear Nueva Categoría"
     :close="{
       color: 'primary',
       variant: 'outline',
-      class: 'rounded-full'
+      class: 'rounded-full',
     }"
   >
     <AppButton icon="i-heroicons-plus" preset="primary" @click="openModal">
@@ -64,37 +57,22 @@ const handleSubmit = async () => {
 
     <template #body>
       <UForm :state="state" class="space-y-4 p-2" @submit="handleSubmit">
+        <UAlert v-if="submitError" color="error" variant="subtle" :title="submitError" />
 
-        <UAlert
-          v-if="submitError"
-          color="error"
-          variant="subtle"
-          :title="submitError"
+        <CategoriesCategoryFields
+          v-model:name="state.name"
+          v-model:description="state.description"
         />
-        
-        <UFormField label="Nombre de la Categoría">
-          <UInput v-model="state.name" placeholder="Ej. Ropa, Electrónica..." class="w-full" required />
-        </UFormField>
-
-        <UFormField label="Descripción">
-          <UTextarea 
-            v-model="state.description" 
-            placeholder="Escribe una breve descripción..." 
-            class="w-full !resize-none"
-            :rows="4"
-          />
-        </UFormField>
 
         <div class="flex justify-end gap-2 pt-4">
           <UButton type="button" color="neutral" variant="ghost" @click="closeModal">
             Cancelar
           </UButton>
-          
+
           <UButton type="submit" color="primary" :loading="isSaving" :disabled="isSaving">
             Guardar
           </UButton>
         </div>
-        
       </UForm>
     </template>
   </UModal>

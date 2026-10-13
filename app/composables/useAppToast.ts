@@ -6,7 +6,7 @@ export const useAppToast = () => {
       title,
       description,
       color: 'success',
-      icon: 'i-heroicons-check-circle'
+      icon: 'i-heroicons-check-circle',
     })
   }
 
@@ -15,7 +15,7 @@ export const useAppToast = () => {
       title,
       description,
       color: 'error',
-      icon: 'i-heroicons-x-circle'
+      icon: 'i-heroicons-x-circle',
     })
   }
 
@@ -24,13 +24,13 @@ export const useAppToast = () => {
       title,
       description,
       color: 'warning',
-      icon: 'i-heroicons-exclamation-triangle'
+      icon: 'i-heroicons-exclamation-triangle',
     })
   }
 
   return {
     success,
     error,
-    warn
+    warn,
   }
 }

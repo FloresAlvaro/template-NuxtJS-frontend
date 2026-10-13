@@ -1,44 +1,22 @@
 <script setup lang="ts">
 import type { NavigationMenuItem } from '@nuxt/ui'
-
-const route = useRoute()
-
+const auth = useAuth()
+const route = useRoute(), menuOpen = ref(false), logoutError = ref('')
+watch(() => route.fullPath, () => { menuOpen.value = false })
 const items = computed<NavigationMenuItem[]>(() => [
-  {
-    label: 'Inicio',
-    to: '/',
-    active: route.path === '/'
-  },
-  {
-    label: 'Categorías',
-    to: '/categories',
-    active: route.path.startsWith('/categories')
-  },
-  {
-    label: 'Productos',
-    to: '/products',
-    active: route.path.startsWith('/products')
-  }
+  { label: 'Inicio', to: '/' }, { label: 'Catálogo', to: '/shop' },
+  ...(auth.isStaff.value ? [{ label: 'Categorías', to: '/categories' }, { label: 'Subcategorías', to: '/sub-categories' }, { label: 'Productos', to: '/products' }] : []),
+  ...(auth.isAdmin.value ? [{ label: 'Usuarios', to: '/users' }] : []),
+  ...(auth.user.value ? [{ label: 'Mi cuenta', to: '/account' }] : [{ label: 'Ingresar', to: '/login' }])
 ])
+async function logout() { try { await auth.logout() } catch { logoutError.value = 'No se pudo cerrar sesión. Inténtalo de nuevo.' } }
 </script>
-
 <template>
-  <UHeader>
-    <template #title>
-      <span class="text-xl font-bold"> Template Tienda NuxtJS </span>
-    </template>
-
+  <UHeader v-model:open="menuOpen">
+    <template #title><span class="text-xl font-bold">Tienda</span></template>
     <UNavigationMenu :items="items" />
-
-    <template #right>
-      <UColorModeButton />
-      <UButton
-        icon="i-lucide-shopping-cart"
-        color="neutral"
-        variant="ghost"
-        to="/carrito"
-        aria-label="Carrito"
-      />
-    </template>
+    <template #body><UNavigationMenu :items="items" orientation="vertical" /><UButton v-if="auth.user.value" variant="ghost" @click="logout">Cerrar sesión</UButton></template>
+    <template #right><UButton v-if="auth.user.value" icon="i-lucide-log-out" variant="ghost" aria-label="Cerrar sesión" @click="logout" /><UColorModeButton /></template>
   </UHeader>
+  <p v-if="logoutError" role="alert" class="text-red-600 text-center">{{ logoutError }}</p>
 </template>
