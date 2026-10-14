@@ -44,7 +44,6 @@ const valid = computed(
     form.reason.trim().length >= 3 &&
     form.reason.trim().length <= 500,
 )
-const totalPages = computed(() => Math.max(1, Math.ceil((history.value?.total ?? 0) / 10)))
 async function reload() {
   await Promise.all([refresh(), refreshHistory()])
 }
@@ -197,39 +196,13 @@ async function saveMinimum() {
           <p class="text-muted">
             {{ movement.user.name }} ·
             {{
-              new Date(movement.createdAt).toLocaleString('es-BO', {
-                timeZone: 'America/La_Paz',
-              })
+              formatStoreDate(movement.createdAt)
             }}
           </p>
         </li>
       </ul>
       <p v-else class="text-sm text-muted">Todavía no hay movimientos registrados.</p>
-      <div class="flex items-center justify-between gap-2">
-        <UButton
-          color="neutral"
-          variant="outline"
-          :disabled="page <= 1 || historyPending || saving"
-          @click="
-            () => {
-              page--
-            }
-          "
-          >Anterior</UButton
-        >
-        <span class="text-sm">{{ page }} / {{ totalPages }}</span>
-        <UButton
-          color="neutral"
-          variant="outline"
-          :disabled="page >= totalPages || historyPending || saving"
-          @click="
-            () => {
-              page++
-            }
-          "
-          >Siguiente</UButton
-        >
-      </div>
+      <ListPagination v-if="history && !historyError" v-model="page" :total="history.total" :limit="10" :pending="historyPending || saving" label="movimientos" />
     </section>
   </div>
 </template>

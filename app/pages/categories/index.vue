@@ -15,17 +15,6 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 const { data: categories, error, pending } = await useApiFetch<CategoryApi[]>('/categories', {})
 
-const formatDate = (dateString: string) => {
-  const date = new Date(dateString)
-  return new Intl.DateTimeFormat('es-ES', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(date)
-}
-
 const columns: TableColumn<CategoryApi>[] = [
   {
     accessorKey: 'categoryId',
@@ -46,13 +35,13 @@ const columns: TableColumn<CategoryApi>[] = [
     accessorKey: 'createdAt',
     header: 'Fecha de Creación',
     meta: { class: { th: 'text-center', td: 'text-center' } },
-    cell: ({ row }) => formatDate(row.getValue('createdAt') as string),
+    cell: ({ row }) => formatStoreDate(row.getValue('createdAt') as string),
   },
   {
     accessorKey: 'updatedAt',
     header: 'Última Actualización',
     meta: { class: { th: 'text-center', td: 'text-center' } },
-    cell: ({ row }) => formatDate(row.getValue('updatedAt') as string),
+    cell: ({ row }) => formatStoreDate(row.getValue('updatedAt') as string),
   },
   {
     id: 'subcategories',

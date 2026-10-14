@@ -50,7 +50,7 @@ const columns: TableColumn<SaleItemApi>[] = [
           <div><dt class="text-muted">Cliente</dt><dd class="mt-1 font-semibold">{{ data.customerName }}</dd></div>
           <div><dt class="text-muted">Documento</dt><dd class="mt-1 font-semibold">{{ data.customerDocument || 'Sin documento' }}</dd></div>
           <div><dt class="text-muted">Vendedor</dt><dd class="mt-1 font-semibold">{{ data.sellerName }}</dd></div>
-          <div><dt class="text-muted">Fecha</dt><dd class="mt-1 font-semibold">{{ saleDate(data.createdAt) }}</dd></div>
+          <div><dt class="text-muted">Fecha</dt><dd class="mt-1 font-semibold">{{ formatStoreDate(data.createdAt) }}</dd></div>
         </dl>
       </UCard>
       <section class="space-y-3"><div><h2 class="text-lg font-bold">Productos vendidos</h2><p class="mt-1 text-sm text-muted">Precios originales y cantidades repuestas por devolución o anulación.</p></div><GenericTable :data="data.items" :columns="columns" /></section>

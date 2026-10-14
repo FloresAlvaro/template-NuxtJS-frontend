@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import { activeStatusColumn } from '~/utils/active-status-column'
 const api = useApi()
 const auth = useAuth()
-import type { BreadcrumbItem, TableColumn } from '@nuxt/ui'
+import type { BreadcrumbItem } from '@nuxt/ui'
 import type { CategoryApi } from '~/types/category'
 import type { SubCategoryApi } from '~/types/sub-category'
 import type { ProductApi, ProductPage } from '~/types/product'
@@ -18,14 +17,7 @@ const limit = ref('20')
 const status = ref('all')
 const availability = ref('all')
 const subFilter = ref('')
-const searchInput = ref('')
-const search = ref('')
-let searchTimer: ReturnType<typeof setTimeout> | undefined
-watch(searchInput, (value) => {
-  clearTimeout(searchTimer)
-  searchTimer = setTimeout(() => { search.value = value.trim() }, 300)
-})
-onBeforeUnmount(() => clearTimeout(searchTimer))
+const { input: searchInput, search } = useSearchText()
 const query = computed(() => ({
   page: page.value,
   limit: Number(limit.value),
@@ -78,36 +70,6 @@ const activeSubs = computed(() =>
     (s) => s.isActive && categories.value?.some((c) => c.categoryId === s.categoryId && c.isActive),
   ),
 )
-const productColumns: TableColumn<ProductApi>[] = [
-  { accessorKey: 'sku', header: 'SKU' },
-  { accessorKey: 'name', header: 'Producto' },
-  {
-    id: 'category',
-    header: 'Categoría',
-    cell: ({ row }) => parentName(row.original.subCategoryId),
-  },
-  {
-    accessorKey: 'subCategoryId',
-    header: 'Subcategoría',
-    cell: ({ row }) => subName(row.original.subCategoryId),
-  },
-  ...(auth.isAdmin.value ? [{ accessorKey: 'cost', header: 'Costo' }] : []),
-  { accessorKey: 'salePrice', header: 'Precio de venta' },
-  { accessorKey: 'quantity', header: 'Stock físico' },
-  { accessorKey: 'reservedQuantity', header: 'Reservado' },
-  { accessorKey: 'availableQuantity', header: 'Disponible para venta' },
-  { id: 'stock', header: 'Estado físico' },
-  activeStatusColumn<ProductApi>(false),
-  { id: 'actions', header: 'Acciones' },
-]
-const columns: TableColumn<ProductApi>[] = productColumns.map((column) => ({
-  ...column,
-  meta: {
-    ...column.meta,
-    class: { ...column.meta?.class, th: 'text-center', td: 'text-center' },
-  },
-}))
-
 const formOpen = ref(false)
 const editing = ref<ProductApi | null>(null)
 const { pending: saving, error: formError, run: runSave } = useAsyncAction()
@@ -332,94 +294,20 @@ async function retry() {
         >
       </UAlert>
       <p v-if="pending" role="status" class="p-4 text-muted">Cargando productos...</p>
-      <GenericTable v-else-if="products?.items.length" :data="products.items" :columns="columns">
-        <template #name="{ row }"><div class="flex items-center gap-3 min-w-48"><ProductPhoto :src="row.original.imageUrl" :name="row.original.name" compact class="size-16 shrink-0 rounded-xl" /><span class="font-semibold text-left">{{ row.original.name }}</span></div></template>
-        <template #stock="{ row }">
-          <UBadge
-            :color="
-              row.original.quantity === 0
-                ? 'error'
-                : row.original.quantity <= row.original.minStock
-                  ? 'warning'
-                  : 'success'
-            "
-          >
-            {{
-              row.original.quantity === 0
-                ? 'Agotado'
-                : row.original.quantity <= row.original.minStock
-                  ? 'Stock bajo'
-                  : 'Disponible'
-            }}
-          </UBadge>
-        </template>
-        <template #actions="{ row }"
-          ><div class="flex items-center justify-center gap-2">
-            <UButton icon="i-lucide-image" color="neutral" variant="soft" :aria-label="`Foto de ${row.original.name}`" @click="openPhoto(row.original)">Foto</UButton>
-            <UButton
-              icon="i-lucide-boxes"
-              color="neutral"
-              variant="soft"
-              :aria-label="`Inventario de ${row.original.name}`"
-              @click="openInventory(row.original)"
-              >Inventario</UButton
-            >
-            <UButton
-              icon="i-lucide-eye"
-              color="neutral"
-              variant="soft"
-              :aria-label="`Ver ${row.original.name}`"
-              :disabled="detailLoading"
-              @click="view(row.original)"
-            />
-            <UButton
-              v-if="auth.isAdmin.value"
-              icon="i-lucide-pencil"
-              color="neutral"
-              variant="soft"
-              :aria-label="`Editar ${row.original.name}`"
-              @click="openForm(row.original)"
-            />
-            <UButton
-              v-if="auth.isAdmin.value"
-              :icon="row.original.isActive ? 'i-lucide-eye-off' : 'i-lucide-check'"
-              :color="row.original.isActive ? 'warning' : 'success'"
-              variant="soft"
-              :aria-label="`${row.original.isActive ? 'Desactivar' : 'Activar'} ${row.original.name}`"
-              @click="confirmToggle(row.original)"
-            /></div
-        ></template>
-      </GenericTable>
+      <ProductCatalogList
+        v-else-if="products?.items.length"
+        :products="products.items"
+        :category-name="parentName"
+        :sub-category-name="subName"
+        :detail-loading="detailLoading"
+        @view="view"
+        @inventory="openInventory"
+        @photo="openPhoto"
+        @edit="openForm"
+        @toggle="confirmToggle"
+      />
       <p v-else class="p-4 text-muted">No hay productos que coincidan con los filtros.</p>
-      <div class="flex flex-wrap items-center justify-between gap-3">
-        <p class="text-sm text-muted">
-          {{ products?.total ?? 0 }} productos · Página {{ page }} de
-          {{ totalPages }}
-        </p>
-        <div class="flex gap-2">
-          <UButton
-            color="neutral"
-            variant="outline"
-            :disabled="page <= 1 || pending"
-            @click="
-              () => {
-                page--
-              }
-            "
-            >Anterior</UButton
-          ><UButton
-            color="neutral"
-            variant="outline"
-            :disabled="page >= totalPages || pending"
-            @click="
-              () => {
-                page++
-              }
-            "
-            >Siguiente</UButton
-          >
-        </div>
-      </div>
+      <ListPagination v-if="products && !error" v-model="page" :total="products.total" :limit="Number(limit)" :pending="pending" label="productos" />
     </template>
 
     <UModal v-model:open="photoOpen" :title="`Foto de ${photoProduct?.name ?? 'producto'}`" :dismissible="!photoBusy" :close="!photoBusy">
@@ -585,42 +473,17 @@ async function retry() {
         </div></template
       >
     </UModal>
-    <UModal v-model:open="detailOpen" title="Detalle del producto">
+    <USlideover v-model:open="detailOpen" title="Detalle del producto" :ui="{ content: 'w-full max-w-lg' }">
       <template #body>
-        <p v-if="detailLoading" role="status">Cargando producto...</p>
-        <UAlert v-else-if="detailError" color="error" :title="detailError" />
-        <dl v-else-if="detail" class="grid grid-cols-2 gap-3 text-sm">
-          <dt class="font-medium">Nombre</dt>
-          <dd class="break-words">{{ detail.name }}</dd>
-          <dt class="font-medium">SKU</dt>
-          <dd class="break-all">{{ detail.sku }}</dd>
-          <dt class="font-medium">Código de barras</dt>
-          <dd class="break-all">{{ detail.barcode || '—' }}</dd>
-          <dt class="font-medium">Categoría</dt>
-          <dd>{{ parentName(detail.subCategoryId) }}</dd>
-          <dt class="font-medium">Subcategoría</dt>
-          <dd>{{ subName(detail.subCategoryId) }}</dd>
-          <template v-if="auth.isAdmin.value"
-            ><dt class="font-medium">Costo</dt>
-            <dd>{{ detail.cost }}</dd></template
-          >
-          <dt class="font-medium">Precio de venta</dt>
-          <dd>{{ detail.salePrice }}</dd>
-          <dt class="font-medium">Stock físico</dt>
-          <dd>{{ detail.quantity }}</dd>
-          <dt class="font-medium">Reservado</dt><dd>{{ detail.reservedQuantity }}</dd>
-          <dt class="font-medium">Disponible para venta</dt><dd>{{ detail.availableQuantity }}</dd>
-          <dt class="font-medium">Stock mínimo</dt>
-          <dd>{{ detail.minStock }}</dd>
-          <dt class="font-medium">Estado</dt>
-          <dd>{{ detail.isActive ? 'Activo' : 'Inactivo' }}</dd>
-          <dt class="font-medium">Descripción</dt>
-          <dd class="whitespace-pre-wrap break-words">
-            {{ detail.description || '—' }}
-          </dd>
-        </dl>
+        <ProductDetail
+          :product="detail"
+          :loading="detailLoading"
+          :error="detailError"
+          :category-name="detail ? parentName(detail.subCategoryId) : ''"
+          :sub-category-name="detail ? subName(detail.subCategoryId) : ''"
+        />
       </template>
-    </UModal>
+    </USlideover>
     <UModal
       v-model:open="inventoryOpen"
       title="Inventario del producto"

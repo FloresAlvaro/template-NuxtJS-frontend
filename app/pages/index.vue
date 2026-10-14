@@ -20,7 +20,7 @@ const shortcuts = computed(() => auth.isStaff.value ? [
           <p class="mt-5 max-w-lg text-violet-100 leading-relaxed">{{ auth.isStaff.value ? 'Ventas, pedidos y productos en un mismo lugar. Elige por dónde empezar hoy.' : 'Explora nuestro catálogo, prepara tu pedido y retíralo en tienda. A tu ritmo, sin complicaciones.' }}</p>
           <div class="mt-7 flex flex-wrap gap-3">
             <UButton :to="auth.isStaff.value ? '/sales/new' : '/shop'" size="lg" color="neutral" :ui="{ base: 'bg-white text-violet-950 hover:bg-violet-100' }" trailing-icon="i-lucide-arrow-right">{{ auth.isStaff.value ? 'Registrar venta' : 'Explorar catálogo' }}</UButton>
-            <UButton v-if="auth.user.value" to="/orders" size="lg" color="neutral" variant="outline" :ui="{ base: 'text-white ring-white/30 hover:bg-white/10' }">{{ auth.isStaff.value ? 'Ver pedidos' : 'Mis pedidos' }}</UButton>
+            <UButton v-if="auth.user.value" to="/orders" size="lg" color="neutral" variant="outline" :ui="{ base: 'bg-transparent text-white ring-white/30 hover:bg-white/10' }">{{ auth.isStaff.value ? 'Ver pedidos' : 'Mis pedidos' }}</UButton>
           </div>
         </div>
         <div class="rounded-3xl border border-white/15 bg-white/5 p-6 sm:p-8">

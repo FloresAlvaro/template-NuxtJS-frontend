@@ -1,8 +1,8 @@
 <script setup lang="ts">
 const api = useApi()
 import type { CategoryApi } from '~/types/category'
-import { useAppToast } from '~/composables/useAppToast'
-import { useModalAction } from '~/composables/useModalAction'
+import { useAppToast } from '~/composables/shared/useAppToast'
+import { useModalAction } from '~/composables/shared/useModalAction'
 
 const props = defineProps<{
   category: CategoryApi
@@ -74,7 +74,7 @@ const handleSubmit = async () => {
       <UForm :state="state" class="space-y-4 p-2" @submit="handleSubmit">
         <UAlert v-if="submitError" color="error" variant="subtle" :title="submitError" />
 
-        <CategoriesCategoryFields
+        <CategoryFields
           v-model:name="state.name"
           v-model:description="state.description"
         />

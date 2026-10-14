@@ -99,12 +99,6 @@ const valid = computed(
     totalCents.value <= 999999999999999999n,
 )
 const total = computed(() => formatCents(totalCents.value))
-const customerPages = computed(() =>
-  Math.max(1, Math.ceil((customers.value?.total ?? 0) / 10)),
-)
-const productPages = computed(() =>
-  Math.max(1, Math.ceil((products.value?.total ?? 0) / 10)),
-)
 function add(product: ProductApi) {
   if (locked.value || product.availableQuantity < 1) return
   const line = cart.value.find(
@@ -283,33 +277,7 @@ onBeforeRouteLeave(
           >
             No hay clientes activos. Puedes crear uno sin cuenta.
           </p>
-          <div class="flex items-center justify-between gap-2">
-            <UButton
-              color="neutral"
-              variant="ghost"
-              :disabled="customerPage <= 1 || customersPending || locked"
-              @click="
-                () => {
-                  customerPage--
-                }
-              "
-              >Anterior</UButton
-            ><span class="text-sm"
-              >{{ customerPage }} / {{ customerPages }}</span
-            ><UButton
-              color="neutral"
-              variant="ghost"
-              :disabled="
-                customerPage >= customerPages || customersPending || locked
-              "
-              @click="
-                () => {
-                  customerPage++
-                }
-              "
-              >Siguiente</UButton
-            >
-          </div>
+          <ListPagination v-if="customers && !customersError" v-model="customerPage" :total="customers.total" :limit="10" :pending="customersPending || locked" label="clientes" />
         </div>
       </UCard>
       <UCard
@@ -357,32 +325,7 @@ onBeforeRouteLeave(
           >
             No hay productos que coincidan.
           </p>
-          <div class="flex items-center justify-between gap-2">
-            <UButton
-              color="neutral"
-              variant="ghost"
-              :disabled="productPage <= 1 || productsPending || locked"
-              @click="
-                () => {
-                  productPage--
-                }
-              "
-              >Anterior</UButton
-            ><span class="text-sm">{{ productPage }} / {{ productPages }}</span
-            ><UButton
-              color="neutral"
-              variant="ghost"
-              :disabled="
-                productPage >= productPages || productsPending || locked
-              "
-              @click="
-                () => {
-                  productPage++
-                }
-              "
-              >Siguiente</UButton
-            >
-          </div>
+          <ListPagination v-if="products && !productsError" v-model="productPage" :total="products.total" :limit="10" :pending="productsPending || locked" label="productos" />
         </div>
       </UCard>
     </div>

@@ -21,7 +21,9 @@ const active = (path: string) => path === '/' ? route.path === '/' : route.path 
           <div class="rounded-2xl bg-primary/10 p-4">
             <UIcon name="i-lucide-zap" class="size-5 text-primary" />
             <p class="mt-2 font-semibold text-sm">Tu próxima venta empieza aquí</p>
-            <UButton to="/sales/new" size="sm" class="mt-3" icon="i-lucide-plus">Nueva venta</UButton>
+            <div class="mt-3 flex justify-center">
+              <UButton to="/sales/new" size="sm" icon="i-lucide-plus">Nueva venta</UButton>
+            </div>
           </div>
         </div>
       </aside>

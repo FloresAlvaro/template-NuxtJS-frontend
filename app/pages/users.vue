@@ -12,13 +12,17 @@ const { data, pending, error, refresh } = await useApiFetch<{
 const labels = ROLE_LABELS
 const roles = ROLES.map(value => ({ value, label: ROLE_LABELS[value] }))
 const roleColors = { ADMIN: 'primary', SELLER: 'info', CUSTOMER: 'neutral' } as const
-const columns: TableColumn<AuthUser>[] = [
+const userColumns: TableColumn<AuthUser>[] = [
   { accessorKey: 'name', header: 'Usuario' },
   { accessorKey: 'email', header: 'Correo electrónico' },
   { accessorKey: 'role', header: 'Rol' },
   { accessorKey: 'isActive', header: 'Estado' },
   { id: 'actions', header: 'Acciones' },
 ]
+const columns: TableColumn<AuthUser>[] = userColumns.map(column => ({
+  ...column,
+  meta: { ...column.meta, class: { ...column.meta?.class, th: 'text-center', td: 'text-center' } },
+}))
 const open = ref(false),
   editing = ref<AuthUser | null>(null),
   busy = ref(false),
@@ -126,10 +130,10 @@ async function reset() {
       <UAlert v-if="error" color="error" variant="subtle" title="No se pudieron cargar los usuarios"><template #actions><UButton color="neutral" variant="outline" @click="refresh()">Reintentar</UButton></template></UAlert>
       <div v-else-if="pending" role="status" class="space-y-3 rounded-2xl border border-default bg-default p-6"><span class="text-sm text-muted">Cargando usuarios...</span><USkeleton v-for="item in 3" :key="item" class="h-12 w-full" /></div>
       <GenericTable v-else-if="data?.items.length" :data="data.items" :columns="columns">
-        <template #name="{ row }"><div class="flex items-center gap-3"><span class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 font-bold text-primary" aria-hidden="true">{{ row.original.name.slice(0, 1).toUpperCase() }}</span><div><span class="font-semibold text-highlighted">{{ row.original.name }}</span><span v-if="row.original.userId === auth.user.value?.userId" class="mt-1 block text-xs text-primary">Tu cuenta</span></div></div></template>
+        <template #name="{ row }"><div class="flex items-center justify-center gap-3"><span class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 font-bold text-primary" aria-hidden="true">{{ row.original.name.slice(0, 1).toUpperCase() }}</span><div><span class="font-semibold text-highlighted">{{ row.original.name }}</span><span v-if="row.original.userId === auth.user.value?.userId" class="mt-1 block text-xs text-primary">Tu cuenta</span></div></div></template>
         <template #role="{ row }"><UBadge :color="roleColors[row.original.role]" variant="subtle">{{ labels[row.original.role] }}</UBadge></template>
         <template #isActive="{ row }"><ActiveStatusBadge :active="row.original.isActive" /></template>
-        <template #actions="{ row }"><div class="flex gap-2"><UButton icon="i-lucide-pencil" color="neutral" variant="soft" :disabled="busy" :aria-label="`Editar ${row.original.name}`" @click="edit(row.original)">Editar</UButton><UButton icon="i-lucide-key-round" color="neutral" variant="outline" :disabled="busy" :aria-label="`Restablecer contraseña de ${row.original.name}`" @click="openReset(row.original)">Contraseña</UButton></div></template>
+        <template #actions="{ row }"><div class="flex flex-wrap items-center justify-center gap-2"><UButton icon="i-lucide-pencil" color="neutral" variant="soft" :disabled="busy" :aria-label="`Editar ${row.original.name}`" @click="edit(row.original)">Editar</UButton><UButton icon="i-lucide-key-round" color="neutral" variant="outline" :disabled="busy" :aria-label="`Restablecer contraseña de ${row.original.name}`" @click="openReset(row.original)">Contraseña</UButton></div></template>
       </GenericTable>
       <div v-else class="rounded-2xl border border-dashed border-default p-10 text-center"><UIcon name="i-lucide-users-round" class="size-10 text-muted" /><h3 class="mt-3 font-semibold">Sin usuarios para mostrar</h3><p class="mt-2 text-sm text-muted">Crea una cuenta para incorporar a alguien a la tienda.</p></div>
       <ListPagination v-if="!error && !pending && data" v-model="page" :total="data.total" :limit="20" :pending="busy" />

@@ -119,12 +119,13 @@ async function submit() {
         type="submit"
         size="lg"
         block
-        class="rounded-xl"
+        class="relative rounded-xl"
+        :label="busy ? 'Ingresando…' : 'Ingresar'"
+        :ui="{ label: 'w-full text-center', trailingIcon: 'absolute right-3.5', leadingIcon: 'absolute left-3.5' }"
         :loading="busy"
         :disabled="busy"
         trailing-icon="i-lucide-arrow-right"
-        >{{ busy ? 'Ingresando…' : 'Ingresar' }}</UButton
-      >
+      />
     </form>
     <div class="my-7 flex items-center gap-3" aria-hidden="true">
       <span class="flex-1 border-t border-default" /><span

@@ -19,6 +19,3 @@ export const orderOperationLabels: Record<string, string> = {
   COMPLETE: 'Entrega',
   CANCEL: 'Cancelación',
 }
-export function formatStoreDate(value: string) {
-  return new Date(value).toLocaleString('es-BO', { timeZone: 'America/La_Paz' })
-}

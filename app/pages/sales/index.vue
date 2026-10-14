@@ -24,9 +24,6 @@ const { data, pending, error, refresh } = await useApiFetch<SalePage>(
     query: { page, search, customerId, limit: 20 },
   },
 )
-const totalPages = computed(() =>
-  Math.max(1, Math.ceil((data.value?.total ?? 0) / 20)),
-)
 const columns: TableColumn<SaleApi>[] = [
   {
     accessorKey: 'saleId',
@@ -39,7 +36,7 @@ const columns: TableColumn<SaleApi>[] = [
     accessorKey: 'createdAt',
     header: 'Fecha',
     cell: ({ row }) =>
-      saleDate(row.original.createdAt),
+      formatStoreDate(row.original.createdAt),
   },
   { accessorKey: 'adjustedTotal', header: 'Total vigente' },
   {
@@ -106,33 +103,6 @@ const columns: TableColumn<SaleApi>[] = [
       ></GenericTable
     >
     <div v-else class="rounded-2xl border border-dashed border-default p-10 text-center"><UIcon name="i-lucide-receipt" class="size-10 text-muted" /><h2 class="mt-3 font-semibold">Sin ventas para mostrar</h2><p class="mt-2 text-sm text-muted">Prueba otra búsqueda o registra una nueva venta.</p></div>
-    <div class="flex items-center justify-between">
-      <span class="text-sm"
-        >{{ data?.total ?? 0 }} ventas · {{ page }} / {{ totalPages }}</span
-      >
-      <div class="flex gap-2">
-        <UButton
-          color="neutral"
-          variant="outline"
-          :disabled="page <= 1 || pending"
-          @click="
-            () => {
-              page--
-            }
-          "
-          >Anterior</UButton
-        ><UButton
-          color="neutral"
-          variant="outline"
-          :disabled="page >= totalPages || pending"
-          @click="
-            () => {
-              page++
-            }
-          "
-          >Siguiente</UButton
-        >
-      </div>
-    </div>
+    <ListPagination v-if="data && !error" v-model="page" :total="data.total" :limit="20" :pending="pending" label="ventas" />
   </div>
 </template>

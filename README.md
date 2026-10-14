@@ -53,6 +53,26 @@ Configura `NUXT_BACKEND_API_BASE` en el servidor y el origen HTTPS público en
 El proxy requiere un servidor Nuxt/Nitro: `generate` y un hosting estático no
 sustituyen este despliegue. Mailpit es local; producción requiere correo real.
 
+## Organización del código
+
+Las páginas conservan las rutas de Nuxt. Los componentes se agrupan por su
+responsabilidad dentro de `app/components`:
+
+- `products`, `categories`, `customers`, `sales`, `orders` y `reports`: interfaz de cada área.
+- `auth`: formularios y controles de acceso.
+- `layout`: cabecera, pie y presentación del espacio de trabajo.
+- `shared`: tablas, paginación, botones, modales y estado reutilizables.
+
+Los composables se organizan en `app/composables/api`, `auth`, `catalog` y
+`shared`. `nuxt.config.ts` habilita su búsqueda en subcarpetas y conserva los
+nombres de componentes sin prefijos de carpeta. Mantén nombres únicos y
+descriptivos al añadir componentes.
+
+`app/utils` contiene funciones puras compartidas y `app/types` los contratos de
+la API. Usa `useSearchText` para búsquedas con debounce y `formatStoreDate`, de
+`app/utils/date.ts`, para presentar fechas y horas en la zona de la tienda.
+La agrupación de fechas de reportes mantiene sus reglas específicas.
+
 ## Funciones implementadas
 
 | Área | Estado |

@@ -117,7 +117,7 @@ const columns: TableColumn<SaleOperationApi>[] = [
     accessorKey: 'createdAt',
     header: 'Fecha',
     cell: ({ row }) =>
-      saleDate(row.original.createdAt),
+      formatStoreDate(row.original.createdAt),
   },
   { id: 'items', header: 'Productos repuestos' },
 ]

@@ -43,6 +43,13 @@ La aplicación usa SSR y un proxy Nitro hacia la API NestJS.
 | `app/assets/css` | Estilos globales y reglas visuales comunes |
 | `server/api/[...path].ts` | Proxy del mismo origen hacia el backend |
 
+Los componentes se agrupan en `products`, `categories`, `customers`, `sales`,
+`orders`, `reports`, `auth`, `layout` y `shared`. Los composables se agrupan en
+`api`, `auth`, `catalog` y `shared`. La configuración de Nuxt escanea esas
+subcarpetas y registra componentes sin prefijos de carpeta: conserva nombres
+únicos. Consulta el README para ubicar código nuevo. Reutiliza `formatStoreDate`
+de `app/utils/date.ts` para fechas y horas de la tienda.
+
 No reorganices todo el repositorio para aplicar una arquitectura nueva. Utiliza
 las convenciones existentes y introduce separación por funcionalidad solo cuando
 el tamaño y las dependencias de la funcionalidad lo justifiquen.
