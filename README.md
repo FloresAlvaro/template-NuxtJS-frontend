@@ -83,6 +83,7 @@ La agrupación de fechas de reportes mantiene sus reglas específicas.
 | Inventario | Stock físico/reservado/disponible, mínimos e historial de movimientos |
 | Ventas | Alta, detalle histórico, cobros manuales, devoluciones, anulaciones y reembolsos |
 | Pedidos | Reserva, confirmación, preparación y retiro; consulta/cancelación propia |
+| Proveedores y compras | ADMIN: proveedores, compras pendientes, recepción completa, costos opcionales y cancelación con historial |
 | Reportes | Seis gráficos ADMIN, filtros de período, tablas exactas y estados de error/reintento |
 | Diseño | Navegación por rol, móvil/escritorio y modo claro/oscuro |
 
@@ -108,6 +109,27 @@ Los productos empiezan en cero: registra una entrada para cargar existencias ini
 Un ajuste usa la cantidad final contada y detecta si el saldo cambió desde la consulta.
 Si ocurre un conflicto, pulsa Actualizar y revisa la cantidad antes de reintentar.
 Las ventas registradas descuentan stock automáticamente. El inventario distingue stock físico, reservado y disponible para venta. Las reservas vigentes de pedidos se descuentan de la disponibilidad.
+
+## Proveedores y compras
+
+ADMIN dispone de Proveedores y Compras en Administración. Proveedores permite
+búsqueda, alta, edición y baja lógica; su botón Compras filtra el historial.
+Los filtros de estas listas se conservan en la URL.
+
+Nueva compra permite buscar proveedores activos y productos por SKU/nombre,
+indicar cantidades y costos unitarios y registrar una compra pendiente. El
+servidor calcula el total y conserva los datos históricos. Registrar la compra
+no cambia el inventario ni representa un pago al proveedor.
+
+Desde su detalle se recibe toda la mercadería, con una confirmación explícita y
+nota, o se cancela mientras esté pendiente. Actualizar el costo del producto es
+opcional; el precio de venta se conserva. Cada recepción genera entradas de
+inventario enlazadas a la compra. Los reintentos mantienen UUID y contenido,
+también al recargar cuando sessionStorage está disponible.
+
+Aplica la migración `20261014180000_suppliers_purchases` y actualiza el backend
+antes de usar estas vistas. SELLER y CUSTOMER no tienen acceso a estos costos.
+Recepciones parciales, devoluciones al proveedor y pagos quedan fuera de esta versión.
 
 ## Clientes y ventas
 

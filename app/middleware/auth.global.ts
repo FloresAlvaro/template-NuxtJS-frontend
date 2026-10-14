@@ -8,15 +8,18 @@ export default defineNuxtRouteMiddleware(async (to) => {
     '/customers',
     '/sales',
   ].some((path) => to.path === path || to.path.startsWith(`${path}/`))
+  const admin = ['/users', '/reports', '/suppliers', '/purchases'].some(
+    path => to.path === path || to.path.startsWith(`${path}/`),
+  )
   const protectedPage =
     staff ||
-    ['/users', '/account', '/reports'].includes(to.path) ||
+    admin || to.path === '/account' ||
     to.path === '/orders' ||
     to.path.startsWith('/orders/')
   if (protectedPage && !auth.user.value)
     return navigateTo({ path: '/login', query: { redirect: to.fullPath } })
   if (staff && !auth.isStaff.value) return navigateTo('/shop')
-  if (['/users', '/reports'].includes(to.path) && !auth.isAdmin.value)
+  if (admin && !auth.isAdmin.value)
     return navigateTo('/shop')
   if (['/login', '/register'].includes(to.path) && auth.user.value)
     return navigateTo(auth.isStaff.value ? '/categories' : '/shop')

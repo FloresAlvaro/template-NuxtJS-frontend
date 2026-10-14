@@ -32,6 +32,8 @@ export const useAppNavigation = () => {
     ...(auth.isAdmin.value ? [{
       label: 'Administración',
       items: [
+        { label: 'Proveedores', to: '/suppliers', icon: 'i-lucide-truck' },
+        { label: 'Compras', to: '/purchases', icon: 'i-lucide-package-plus' },
         { label: 'Reportes', to: '/reports', icon: 'i-lucide-chart-no-axes-combined' },
         { label: 'Usuarios', to: '/users', icon: 'i-lucide-user-round-cog' },
       ],

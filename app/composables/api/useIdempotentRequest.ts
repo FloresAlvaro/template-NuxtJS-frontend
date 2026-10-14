@@ -3,6 +3,7 @@ import { apiErrorStatus } from '~/utils/api-error'
 // A lost response must reuse the same payload, including after a tab reload.
 export function useIdempotentRequest<TBody extends { requestId: string }>(
   key: string,
+  allowedPath = /^\/orders(?:\/[1-9]\d*\/(confirm|ready|complete|cancel))?$/,
 ) {
   const api = useApi()
   const { pending, error, run } = useAsyncAction()
@@ -19,9 +20,7 @@ export function useIdempotentRequest<TBody extends { requestId: string }>(
           'path' in value &&
           'body' in value &&
           typeof value.path === 'string' &&
-          /^\/orders(?:\/[1-9]\d*\/(confirm|ready|complete|cancel))?$/.test(
-            value.path,
-          ) &&
+          allowedPath.test(value.path) &&
           value.body &&
           typeof value.body === 'object' &&
           'requestId' in value.body &&

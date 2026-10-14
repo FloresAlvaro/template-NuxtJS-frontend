@@ -192,6 +192,7 @@ async function saveMinimum() {
           </p>
           <p>{{ movement.previousQuantity }} → {{ movement.resultingQuantity }} unidades</p>
           <p class="whitespace-pre-wrap break-words">{{ movement.reason }}</p>
+          <UButton v-if="movement.purchaseItem && auth.isAdmin.value" :to="`/purchases/${movement.purchaseItem.purchaseId}`" icon="i-lucide-package-plus" color="neutral" variant="link" size="xs">Ver compra</UButton>
           <UButton v-if="movement.saleItem || movement.operationItem" :to="`/sales/${movement.saleItem?.saleId ?? movement.operationItem?.operation.saleId}`" icon="i-lucide-receipt" color="neutral" variant="link" size="xs">Ver venta</UButton>
           <p class="text-muted">
             {{ movement.user.name }} ·

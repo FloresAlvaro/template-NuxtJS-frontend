@@ -131,6 +131,9 @@ el tamaño y las dependencias de la funcionalidad lo justifiquen.
   nuevas antes de exponerlas.
 - CUSTOMER accede a su perfil, catálogo público y funciones de pedidos permitidas.
   No muestres costos internos ni datos de otros usuarios.
+- Proveedores y compras son exclusivos de ADMIN. Registrar una compra no cambia
+  stock ni representa un pago; la recepción completa incrementa inventario una
+  sola vez. Mantén el UUID y payload al reintentar creación, recepción o cancelación.
 - Distingue stock físico (`quantity`), reservado (`reservedQuantity`) y realmente
   disponible (`availableQuantity`). No llames disponibles a unidades reservadas.
   Si un endpoint no devuelve lo necesario, señala o resuelve el contrato dentro

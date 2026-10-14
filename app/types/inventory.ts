@@ -18,6 +18,7 @@ export interface StockMovementApi {
   user: { userId: number; name: string }
   operationItem?: { operation: { saleId: number } } | null
   saleItem?: { saleId: number } | null
+  purchaseItem?: { purchaseId: number } | null
 }
 export interface StockMovementPage {
   items: StockMovementApi[]
