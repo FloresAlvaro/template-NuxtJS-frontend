@@ -78,7 +78,7 @@ const validQuantity = (line: CartLine) =>
   /^\d+$/.test(line.quantity) &&
   Number.isSafeInteger(Number(line.quantity)) &&
   Number(line.quantity) > 0 &&
-  Number(line.quantity) <= line.product.quantity &&
+  Number(line.quantity) <= line.product.availableQuantity &&
   line.product.isActive
 const totalCents = computed(() =>
   cart.value.reduce(
@@ -106,12 +106,12 @@ const productPages = computed(() =>
   Math.max(1, Math.ceil((products.value?.total ?? 0) / 10)),
 )
 function add(product: ProductApi) {
-  if (locked.value || product.quantity < 1) return
+  if (locked.value || product.availableQuantity < 1) return
   const line = cart.value.find(
     (line) => line.product.productId === product.productId,
   )
   if (line) {
-    if (Number(line.quantity) < product.quantity)
+    if (Number(line.quantity) < product.availableQuantity)
       line.quantity = String(Number(line.quantity) + 1)
   } else if (cart.value.length < 100)
     cart.value.push({ product: { ...product }, quantity: '1' })
@@ -336,11 +336,11 @@ onBeforeRouteLeave(
                 color="neutral"
                 variant="outline"
                 :disabled="
-                  locked || product.quantity === 0 || cart.length >= 100
+                  locked || product.availableQuantity === 0 || cart.length >= 100
                 "
                 @click="add(product)"
                 >{{ product.name }} · {{ product.sku }} ·
-                {{ product.salePrice }} · Stock: {{ product.quantity }}</UButton
+                {{ product.salePrice }} · Disponible: {{ product.availableQuantity }}</UButton
               >
             </li>
           </ul>
@@ -414,7 +414,7 @@ onBeforeRouteLeave(
               <td class="p-3">
                 {{ line.product.name }}
                 <p class="text-muted">
-                  {{ line.product.sku }} · Stock: {{ line.product.quantity }}
+                  {{ line.product.sku }} · Disponible: {{ line.product.availableQuantity }}
                 </p>
                 <p v-if="!validQuantity(line)" class="text-error">
                   Revisa la cantidad o el estado del producto.

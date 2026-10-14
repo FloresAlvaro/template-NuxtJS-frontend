@@ -81,7 +81,7 @@ El frontend incluye `/login`, `/register`, `/account`, `/users` (solo administra
 
 Las peticiones usan `/api` en el mismo origen. `server/api/[...path].ts` reenvía al backend configurado mediante `NUXT_BACKEND_API_BASE` (por defecto http://localhost:3001/api), conservando cookies HttpOnly. No se almacena el token en localStorage. Se requiere un servidor Nuxt/Nitro; un hosting de archivos estáticos por sí solo no ejecuta este proxy.
 
-Crea el primer administrador con el comando interactivo documentado en el README del backend. Para publicar, configura el origen HTTPS en TRUSTED_ORIGINS del backend y COOKIE_SECURE=true. El registro público crea únicamente cuentas de cliente. La recuperación de contraseña por correo, compras e imágenes de productos siguen pendientes.
+Crea el primer administrador con el comando interactivo documentado en el README del backend. Para publicar, configura el origen HTTPS en TRUSTED_ORIGINS del backend y COOKIE_SECURE=true. El registro público crea únicamente cuentas de cliente. La recuperación de contraseña y los pedidos de retiro están integrados; las imágenes de productos siguen pendientes en la interfaz.
 
 Validaciones: `pnpm typecheck` y `pnpm build`.
 
@@ -96,7 +96,7 @@ Actualiza el backend y aplica la migración de inventario antes de usar esta pan
 Los productos empiezan en cero: registra una entrada para cargar existencias iniciales.
 Un ajuste usa la cantidad final contada y detecta si el saldo cambió desde la consulta.
 Si ocurre un conflicto, pulsa Actualizar y revisa la cantidad antes de reintentar.
-Las ventas registradas descuentan stock automáticamente. Las reservas siguen pendientes.
+Las ventas registradas descuentan stock automáticamente. El inventario distingue stock físico, reservado y disponible para venta. Las reservas vigentes de pedidos se descuentan de la disponibilidad.
 
 ## Clientes y ventas
 
@@ -127,3 +127,22 @@ automáticamente.
 - `utils/roles.ts`: nombres y opciones de roles; `utils/api-error.ts`: lectura segura del código de error HTTP.
 
 Los formularios y las reglas específicas de cada entidad siguen separados. La API aplica siempre los permisos; ocultar un botón en el frontend no sustituye esa validación.
+
+
+## Pedidos, reportes y recuperación
+
+- El cliente autenticado agrega productos desde Catálogo y confirma un pedido de retiro en tienda. Mis pedidos permite consultar estado, reserva, importes y cancelar pedidos pendientes.
+- ADMIN/SELLER consultan Pedidos, confirman reservas, preparan y entregan. La confirmación crea la venta; su enlace permite registrar el cobro. Solo se habilita entrega con saldo cero. Para anular después de confirmar, ADMIN utiliza la anulación de la venta.
+- Reportes está disponible solo para ADMIN: resumen de ventas por período, productos más vendidos, inventario físico y productos en mínimo/agotados. Los saldos son actuales para ventas creadas en el período; no constituyen un cierre de caja. Las fechas se interpretan en America/La_Paz y el día Hasta se incluye.
+- Login incluye Recuperar contraseña. El correo enlaza a /reset-password#token=...; el frontend retira el fragmento del historial, mantiene el token solo en memoria y no inicia sesión automáticamente al terminar. Recargar requiere volver a abrir el enlace original.
+- Los pedidos y transiciones reutilizan UUID/payload en respuestas desconocidas, también tras recarga si sessionStorage está disponible. La interfaz bloquea nuevos envíos hasta confirmar el resultado.
+- Productos e Inventario muestran cantidades físicas, reservadas y disponibles; Catálogo y Nueva venta usan disponibilidad real. El filtro Estado del stock físico conserva la semántica del backend para quantity/minStock.
+
+Antes de usar estas funciones, aplica todas las migraciones y actualiza el backend.
+Docker: docker compose up -d --build backend desde el proyecto backend.
+La URL de recuperación predeterminada ahora apunta a http://localhost:3000/reset-password.
+Si Nuxt utiliza otro origen, configura PASSWORD_RESET_URL con su URL /reset-password y
+TRUSTED_ORIGINS con ese origen. En local, Mailpit en http://localhost:8025 captura el
+correo; no entrega mensajes a Internet. Configura SMTP real antes de publicar.
+
+Las imágenes siguen pendientes de integración por decisión del usuario.

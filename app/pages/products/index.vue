@@ -93,8 +93,10 @@ const productColumns: TableColumn<ProductApi>[] = [
   },
   ...(auth.isAdmin.value ? [{ accessorKey: 'cost', header: 'Costo' }] : []),
   { accessorKey: 'salePrice', header: 'Precio de venta' },
-  { accessorKey: 'quantity', header: 'Stock disponible' },
-  { id: 'stock', header: 'Disponibilidad' },
+  { accessorKey: 'quantity', header: 'Stock físico' },
+  { accessorKey: 'reservedQuantity', header: 'Reservado' },
+  { accessorKey: 'availableQuantity', header: 'Disponible para venta' },
+  { id: 'stock', header: 'Estado físico' },
   activeStatusColumn<ProductApi>(false),
   { id: 'actions', header: 'Acciones' },
 ]
@@ -282,7 +284,7 @@ async function retry() {
         </select>
       </label>
       <label class="space-y-1 text-sm">
-        <span class="block font-medium">Disponibilidad</span>
+        <span class="block font-medium">Estado del stock físico</span>
         <select v-model="availability" class="product-select">
           <option value="all">Todas</option>
           <option value="AVAILABLE">Disponible</option>
@@ -592,8 +594,10 @@ async function retry() {
           >
           <dt class="font-medium">Precio de venta</dt>
           <dd>{{ detail.salePrice }}</dd>
-          <dt class="font-medium">Stock disponible</dt>
+          <dt class="font-medium">Stock físico</dt>
           <dd>{{ detail.quantity }}</dd>
+          <dt class="font-medium">Reservado</dt><dd>{{ detail.reservedQuantity }}</dd>
+          <dt class="font-medium">Disponible para venta</dt><dd>{{ detail.availableQuantity }}</dd>
           <dt class="font-medium">Stock mínimo</dt>
           <dd>{{ detail.minStock }}</dd>
           <dt class="font-medium">Estado</dt>

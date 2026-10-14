@@ -92,7 +92,9 @@ async function saveMinimum() {
       :title="getApiErrorMessage(error, 'No se pudo consultar el inventario')"
     />
     <div v-else-if="inventory" class="flex flex-wrap items-center gap-3">
-      <p class="text-lg font-semibold">Disponibles: {{ inventory.quantity }}</p>
+      <p class="font-semibold">Stock físico: {{ inventory.quantity }}</p>
+      <p>Reservado: {{ inventory.reservedQuantity }}</p>
+      <p class="text-lg font-semibold">Disponible para venta: {{ inventory.availableQuantity }}</p>
       <UBadge
         :color="
           inventory.quantity === 0

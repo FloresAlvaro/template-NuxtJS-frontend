@@ -1,4 +1,6 @@
 export interface ProductApi {
+  reservedQuantity: number
+  availableQuantity: number
   quantity: number
   minStock: number
   stockStatus: 'OUT_OF_STOCK' | 'LOW_STOCK' | 'AVAILABLE'

@@ -44,6 +44,7 @@ async function submit() {
       /></UFormField>
       <p v-if="error" role="alert" class="text-red-600">{{ error }}</p>
       <UButton type="submit" :loading="busy" :disabled="busy">Ingresar</UButton>
+      <NuxtLink to="/forgot-password" class="block text-primary">¿Olvidaste tu contraseña?</NuxtLink>
       <p>
         ¿No tienes cuenta?
         <NuxtLink to="/register" class="text-primary">Regístrate como cliente</NuxtLink>
