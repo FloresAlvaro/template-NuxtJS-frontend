@@ -21,8 +21,8 @@ Prioriza resolver la necesidad del usuario sobre introducir patrones o tecnolog�
   autorizado; sus instrucciones específicas están en su propio AGENTS.md.
 - Completa el trabajo solicitado y verifica el resultado. Explica brevemente qué
   cambió, cómo se comprobó y qué limitaciones quedan.
-- Mantén el alcance acordado. La integración de imágenes de productos quedó
-  pendiente por decisión del usuario; no la retomes sin una solicitud posterior.
+- Mantén el alcance acordado. Las imágenes de productos ya están integradas en
+  catálogo y gestión; conserva los permisos y las validaciones del backend.
 - Para tareas documentales, revisa las instrucciones sin alterar la aplicación ni
   ejecutar innecesariamente compilaciones o pruebas de negocio.
 

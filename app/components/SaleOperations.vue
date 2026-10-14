@@ -117,9 +117,7 @@ const columns: TableColumn<SaleOperationApi>[] = [
     accessorKey: 'createdAt',
     header: 'Fecha',
     cell: ({ row }) =>
-      new Date(row.original.createdAt).toLocaleString('es-BO', {
-        timeZone: 'America/La_Paz',
-      }),
+      saleDate(row.original.createdAt),
   },
   { id: 'items', header: 'Productos repuestos' },
 ]
@@ -200,7 +198,7 @@ async function submit() {
     />
     <UCard v-if="options.length || submitted">
       <template #header
-        ><h2 class="font-semibold">Gestionar venta</h2></template
+        ><h2 class="flex items-center gap-2 font-semibold"><UIcon name="i-lucide-wallet" class="size-5 text-primary" />Gestionar venta</h2></template
       >
       <form class="space-y-4" @submit.prevent="submit">
         <UFormField label="Operación"
@@ -303,7 +301,7 @@ async function submit() {
       </p>
     </UCard>
     <UAlert v-if="message" color="success" :title="message" />
-    <h2 class="font-semibold">Historial de operaciones</h2>
+    <div><h2 class="text-lg font-bold">Historial de operaciones</h2><p class="mt-1 text-sm text-muted">Cobros, reembolsos y reposiciones registrados para esta venta.</p></div>
     <GenericTable
       v-if="sale.operations.length"
       :data="sale.operations"
@@ -320,8 +318,6 @@ async function submit() {
         }}</span></template
       >
     </GenericTable>
-    <p v-else class="text-sm text-muted">
-      Esta venta aún no tiene cobros, devoluciones ni anulaciones.
-    </p>
+    <div v-else class="rounded-2xl border border-dashed border-default p-6 text-sm text-muted">Esta venta aún no tiene cobros, devoluciones ni anulaciones.</div>
   </section>
 </template>

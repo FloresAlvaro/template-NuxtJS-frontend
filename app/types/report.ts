@@ -30,9 +30,40 @@ export interface LowStockReport {
     productId: number
     name: string
     sku: string
+    reservedQuantity: number
+    availableQuantity: number
     inventory: { quantity: number; minStock: number } | null
   }[]
   total: number
   page: number
   limit: number
+}
+
+export interface SalesSeriesReport {
+  group: 'DAY' | 'MONTH'
+  timeZone: string
+  items: {
+    date: string
+    saleCount: number
+    originalTotal: string
+    adjustedTotal: string
+  }[]
+}
+export interface SellersReport {
+  total: number
+  limit: number
+  items: {
+    userId: number
+    sellerName: string
+    saleCount: number
+    originalTotal: string
+    adjustedTotal: string
+  }[]
+}
+export interface PaymentMethodsReport {
+  items: {
+    method: 'CASH' | 'CARD' | 'TRANSFER'
+    paymentCount: number
+    amount: string
+  }[]
 }

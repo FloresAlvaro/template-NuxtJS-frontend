@@ -190,9 +190,16 @@ onBeforeRouteLeave(
         { label: 'Nueva venta' },
       ]"
     />
-    <h1 class="text-xl font-bold">Nueva venta</h1>
+    <WorkspaceHeader eyebrow="Punto de venta" title="Nueva venta" icon="i-lucide-shopping-cart" description="Selecciona el cliente, agrega productos y revisa el total antes de registrar.">
+      <template #actions><UButton to="/sales" color="neutral" variant="outline" icon="i-lucide-arrow-left" :disabled="locked" :ui="{ base: 'bg-transparent text-white ring-white/30 hover:bg-white/10' }">Volver a ventas</UButton></template>
+    </WorkspaceHeader>
+    <ol class="grid gap-3 sm:grid-cols-3" aria-label="Pasos para registrar una venta">
+      <li v-for="(step, index) in ['Selecciona el cliente', 'Agrega productos', 'Revisa y confirma']" :key="step" class="flex items-center gap-3 rounded-2xl border border-default bg-default p-4"><span class="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">{{ index + 1 }}</span><span class="text-sm font-medium">{{ step }}</span></li>
+    </ol>
     <UAlert
-      color="info"
+      color="neutral"
+      variant="subtle"
+      icon="i-lucide-info"
       title="Registrar descuenta el stock"
       description="Revisa cliente, cantidades y precios antes de confirmar. Después podrás registrar cobros y gestionar devoluciones o anulaciones desde el detalle de la venta."
     />
@@ -207,8 +214,8 @@ onBeforeRouteLeave(
     <div class="grid gap-5 lg:grid-cols-2">
       <UCard
         ><template #header
-          ><div class="flex justify-between items-center">
-            <h2 class="font-semibold">Cliente</h2>
+          ><div class="flex flex-wrap justify-between items-center gap-3">
+            <h2 class="flex items-center gap-2 font-semibold"><UIcon name="i-lucide-user-round" class="size-5 text-primary" />Cliente</h2>
             <UButton
               icon="i-lucide-user-plus"
               color="neutral"
@@ -224,7 +231,7 @@ onBeforeRouteLeave(
           </div></template
         >
         <div class="space-y-3">
-          <p v-if="customer" class="font-medium">
+          <p v-if="customer" class="rounded-xl border border-primary/20 bg-primary/5 p-4 text-sm font-medium">
             Seleccionado: {{ customer.name }} ·
             {{ customer.document || 'Sin documento' }}
           </p>
@@ -253,9 +260,10 @@ onBeforeRouteLeave(
               <UButton
                 block
                 :variant="
-                  customer?.customerId === item.customerId ? 'soft' : 'outline'
+                  customer?.customerId === item.customerId ? 'soft' : 'ghost'
                 "
-                color="neutral"
+                :color="customer?.customerId === item.customerId ? 'primary' : 'neutral'"
+                :aria-pressed="customer?.customerId === item.customerId"
                 :disabled="locked"
                 @click="
                   () => {
@@ -306,7 +314,7 @@ onBeforeRouteLeave(
       </UCard>
       <UCard
         ><template #header
-          ><h2 class="font-semibold">Agregar productos</h2></template
+          ><h2 class="flex items-center gap-2 font-semibold"><UIcon name="i-lucide-package-plus" class="size-5 text-primary" />Agregar productos</h2></template
         >
         <div class="space-y-3">
           <UInput
@@ -336,11 +344,10 @@ onBeforeRouteLeave(
                 color="neutral"
                 variant="outline"
                 :disabled="
-                  locked || product.availableQuantity === 0 || cart.length >= 100
+                  locked || product.availableQuantity === 0 || (cart.length >= 100 && !cart.some(line => line.product.productId === product.productId))
                 "
                 @click="add(product)"
-                >{{ product.name }} · {{ product.sku }} ·
-                {{ product.salePrice }} · Disponible: {{ product.availableQuantity }}</UButton
+                ><span class="flex w-full min-w-0 items-center justify-between gap-3 text-left"><span class="min-w-0"><span class="block truncate font-semibold">{{ product.name }}</span><span class="block text-xs text-muted">{{ product.sku }} · Disponible: {{ product.availableQuantity }}</span></span><span class="shrink-0 font-bold text-primary">{{ product.salePrice }}<UIcon name="i-lucide-plus-circle" class="ml-2 size-4 align-middle" /></span></span></UButton
               >
             </li>
           </ul>
@@ -381,7 +388,7 @@ onBeforeRouteLeave(
     </div>
     <UCard
       ><template #header
-        ><div class="flex items-center justify-between">
+        ><div class="flex flex-wrap items-center justify-between gap-3">
           <h2 class="font-semibold">Detalle de la venta</h2>
           <UButton
             icon="i-lucide-refresh-cw"
@@ -458,12 +465,15 @@ onBeforeRouteLeave(
           </tbody>
         </table>
       </div>
-      <p v-else class="text-muted">Agrega productos para registrar la venta.</p>
-      <p class="mt-4 text-xl font-bold text-right">Total: {{ total }}</p>
+      <div v-else class="rounded-xl border border-dashed border-default p-8 text-center"><UIcon name="i-lucide-shopping-cart" class="size-9 text-muted" /><p class="mt-3 font-medium">Tu venta comienza aquí</p><p class="mt-1 text-sm text-muted">Agrega productos desde el listado para revisar cantidades y precios.</p></div>
+      <div class="mt-5 flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-primary/5 p-5"><div><p class="text-sm font-medium">{{ customer?.name || 'Selecciona un cliente' }}</p><p class="mt-1 text-xs text-muted">{{ cart.length }} {{ cart.length === 1 ? 'producto distinto' : 'productos distintos' }} · Cobro posterior al registro</p></div><div class="min-w-0 text-right"><p class="section-eyebrow text-primary">Total de la venta</p><p class="mt-2 break-all text-3xl font-extrabold tabular-nums">{{ total }}</p></div></div>
       <div class="mt-4 flex justify-end">
         <UButton
           :disabled="saving || reloading || (!submitted && !valid)"
           :loading="saving"
+          size="lg"
+          icon="i-lucide-check"
+          class="w-full sm:w-auto"
           @click="submit"
           >{{
             submitted && !saving
