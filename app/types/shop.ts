@@ -1,4 +1,5 @@
 export interface ShopProduct {
+  imageUrl: string | null
   productId: number
   name: string
   sku: string

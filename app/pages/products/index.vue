@@ -215,6 +215,13 @@ const {
   },
   refresh: reloadProducts,
 })
+const photoOpen = ref(false)
+const photoBusy = ref(false)
+const photoProduct = ref<ProductApi | null>(null)
+function openPhoto(product: ProductApi) {
+  photoProduct.value = product
+  photoOpen.value = true
+}
 const detailOpen = ref(false)
 const inventoryOpen = ref(false)
 const inventorySaving = ref(false)
@@ -248,7 +255,7 @@ async function retry() {
   <div class="space-y-4">
     <UBreadcrumb :items="breadcrumbs" />
     <div class="flex flex-wrap items-center justify-between gap-3">
-      <h1 class="text-xl font-bold">Productos</h1>
+      <div><p class="section-eyebrow text-primary">Catálogo de gestión</p><h1 class="mt-1 text-2xl font-bold">Productos</h1><p class="mt-1 text-sm text-muted">Organiza tu catálogo, sus fotos y disponibilidad.</p></div>
       <UButton
         v-if="auth.isAdmin.value"
         icon="i-lucide-plus"
@@ -326,6 +333,7 @@ async function retry() {
       </UAlert>
       <p v-if="pending" role="status" class="p-4 text-muted">Cargando productos...</p>
       <GenericTable v-else-if="products?.items.length" :data="products.items" :columns="columns">
+        <template #name="{ row }"><div class="flex items-center gap-3 min-w-48"><ProductPhoto :src="row.original.imageUrl" :name="row.original.name" compact class="size-16 shrink-0 rounded-xl" /><span class="font-semibold text-left">{{ row.original.name }}</span></div></template>
         <template #stock="{ row }">
           <UBadge
             :color="
@@ -347,6 +355,7 @@ async function retry() {
         </template>
         <template #actions="{ row }"
           ><div class="flex items-center justify-center gap-2">
+            <UButton icon="i-lucide-image" color="neutral" variant="soft" :aria-label="`Foto de ${row.original.name}`" @click="openPhoto(row.original)">Foto</UButton>
             <UButton
               icon="i-lucide-boxes"
               color="neutral"
@@ -413,6 +422,9 @@ async function retry() {
       </div>
     </template>
 
+    <UModal v-model:open="photoOpen" :title="`Foto de ${photoProduct?.name ?? 'producto'}`" :dismissible="!photoBusy" :close="!photoBusy">
+      <template #body><ProductImageManager v-if="photoOpen && photoProduct" :key="photoProduct.productId" :product="photoProduct" @changed="reloadProducts" @busy="photoBusy = $event" /></template>
+    </UModal>
     <UModal
       v-model:open="formOpen"
       :title="editing ? 'Editar producto' : 'Nuevo producto'"

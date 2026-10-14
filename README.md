@@ -81,7 +81,7 @@ El frontend incluye `/login`, `/register`, `/account`, `/users` (solo administra
 
 Las peticiones usan `/api` en el mismo origen. `server/api/[...path].ts` reenvía al backend configurado mediante `NUXT_BACKEND_API_BASE` (por defecto http://localhost:3001/api), conservando cookies HttpOnly. No se almacena el token en localStorage. Se requiere un servidor Nuxt/Nitro; un hosting de archivos estáticos por sí solo no ejecuta este proxy.
 
-Crea el primer administrador con el comando interactivo documentado en el README del backend. Para publicar, configura el origen HTTPS en TRUSTED_ORIGINS del backend y COOKIE_SECURE=true. El registro público crea únicamente cuentas de cliente. La recuperación de contraseña y los pedidos de retiro están integrados; las imágenes de productos siguen pendientes en la interfaz.
+Crea el primer administrador con el comando interactivo documentado en el README del backend. Para publicar, configura el origen HTTPS en TRUSTED_ORIGINS del backend y COOKIE_SECURE=true. El registro público crea únicamente cuentas de cliente. La recuperación de contraseña y los pedidos de retiro están integrados; las imágenes de productos se muestran en el catálogo y se gestionan desde Productos.
 
 Validaciones: `pnpm typecheck` y `pnpm build`.
 
@@ -145,4 +145,43 @@ Si Nuxt utiliza otro origen, configura PASSWORD_RESET_URL con su URL /reset-pass
 TRUSTED_ORIGINS con ese origen. En local, Mailpit en http://localhost:8025 captura el
 correo; no entrega mensajes a Internet. Configura SMTP real antes de publicar.
 
-Las imágenes siguen pendientes de integración por decisión del usuario.
+## Interfaz y fotos de productos
+
+La interfaz usa una base violeta con acentos cálidos, adaptable a otra marca desde
+`app/app.config.ts` y `app/assets/css/main.css`. Inicio ofrece accesos por rol;
+ADMIN/SELLER tienen navegación lateral en escritorio y menú agrupado en móvil.
+Los clientes y visitantes disponen de navegación superior y catálogo de tarjetas.
+Se conservan modo claro/oscuro, foco visible y preferencias de movimiento reducido.
+
+El catálogo muestra `imageUrl`, disponibilidad real y confirmación visual al
+agregar productos al pedido. La página del catálogo se conserva en la URL.
+No se añaden filtros de búsqueda públicos: el endpoint actual solo permite paginación.
+
+En Productos, Foto permite consultar la imagen a ADMIN/SELLER. ADMIN puede
+seleccionar, previsualizar, guardar, reemplazar o eliminar una foto con confirmación.
+Primero crea el producto y después carga su foto. Se admiten JPEG, PNG y WebP
+estáticos de hasta 5 MiB; el servidor valida un máximo de 16 megapíxeles y normaliza
+a WebP. Los errores conservan la selección para reintentar y los productos sin foto
+muestran un estado alternativo. Las operaciones usan el proxy `/api` existente.
+
+Verificación del rediseño: typecheck y build; revisión en navegador a 1440 y 390 px
+con una API temporal y datos ficticios (roles, carrito, fotos, vacío y error).
+La integración de fotos con la API NestJS y PostgreSQL real debe verificarse en una
+instancia local actualizada; estas comprobaciones de interfaz no la sustituyen.
+
+## Acceso y registro
+
+Login y registro comparten una presentación adaptable: panel de bienvenida en
+escritorio y encabezado compacto en móvil. Los campos conservan autocompletado,
+etiquetas accesibles y límites de la API; las contraseñas pueden mostrarse u
+ocultarse individualmente. Durante el envío se bloquean campos y botón.
+
+Registro muestra ayuda de longitud y coincidencia de contraseña, conserva los
+datos ante errores y confirma la creación desde login antes de iniciar sesión.
+El enlace entre ambas pantallas conserva el destino solicitado; login sigue
+validando que ese destino sea una ruta interna permitida. Los errores de acceso,
+correo registrado y límite de intentos tienen mensajes en español.
+
+Verificación: typecheck y build; revisión visual en móvil y escritorio, modo claro
+y oscuro, y flujos de registro/login con una API temporal de datos ficticios.
+No se crearon usuarios adicionales en la base habitual durante esta revisión.
