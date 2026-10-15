@@ -1,4 +1,4 @@
-import { apiErrorStatus } from '~/utils/api-error'
+import { apiErrorStatus, isConfirmedOperationRejection } from '~/utils/api-error'
 
 // A lost response must reuse the same payload, including after a tab reload.
 export function useIdempotentRequest<TBody extends { requestId: string }>(
@@ -66,7 +66,8 @@ export function useIdempotentRequest<TBody extends { requestId: string }>(
         submission.value = null
       } catch (cause) {
         const status = apiErrorStatus(cause)
-        if (status && status >= 400 && status < 500) submission.value = null
+        if (isConfirmedOperationRejection(cause)) submission.value = null
+        if (status === 401) throw new Error('Tu sesión venció. Recarga la página e ingresa con la misma cuenta para reintentar la operación pendiente.')
         throw cause
       }
     }, 'No se pudo confirmar el resultado. Reintenta la misma operación para evitar duplicados.')

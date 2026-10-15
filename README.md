@@ -104,7 +104,14 @@ de sesión y firma privada del proxy, además de promociones.
 Las ventas pendientes guardan su UUID y payload en sessionStorage por usuario;
 tras recargar se reenvía exactamente la misma operación. Si el navegador bloquea
 ese almacenamiento, los reintentos solo se conservan mientras la página siga
-abierta. Las páginas públicas muestran un aviso cuando falla la sesión; las
+abierta. Los errores de sesión, permisos, timeout o límite de solicitudes no
+borran un envío pendiente: un rechazo del reintento no demuestra que el primer
+intento no se guardó. Un rechazo de promoción con código `PROMOTION_NOT_ALLOWED`
+permite corregirla. Los cobros/reembolsos también guardan su envío por usuario.
+Antes de actualizar desde una versión que guardaba operaciones solo por venta,
+confirma cualquier operación pendiente con esa versión; las claves antiguas sin
+usuario no se atribuyen automáticamente a otra cuenta.
+Las páginas públicas muestran un aviso cuando falla la sesión; las
 privadas responden 503 sin conservar permisos de una sesión no comprobada.
 
 Para separar los clientes del proxy en el límite de acceso, configura

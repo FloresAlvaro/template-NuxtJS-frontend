@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs'
 import { runInNewContext } from 'node:vm'
 import ts from 'typescript'
 import { ref, shallowRef, computed, watch, reactive, nextTick, effectScope } from 'vue'
-import { apiErrorStatus } from '../app/utils/api-error.ts'
+import { apiErrorStatus, isConfirmedOperationRejection } from '../app/utils/api-error.ts'
 import { signedClientHeaders } from '../server/utils/proxy-client.ts'
 import { createHmac } from 'node:crypto'
 
@@ -19,7 +19,7 @@ function load(path, globals = {}) {
   runInNewContext(code, {
     exports, ref, shallowRef, computed, watch,
     require: name => {
-      if (name === '~/utils/api-error') return { apiErrorStatus }
+      if (name === '~/utils/api-error') return { apiErrorStatus, isConfirmedOperationRejection }
       throw new Error(`Unexpected import ${name}`)
     },
     ...globals,
@@ -30,8 +30,10 @@ function load(path, globals = {}) {
 test('lost sale responses retain the original UUID and payload across a reload', async () => {
   const saved = new Map(), calls = []
   let loseResponse = true
+  let rejection
   const api = async (path, options) => {
     calls.push({ path, body: options.body })
+    if (rejection) throw rejection
     if (loseResponse) throw new Error('response lost after server commit')
     return { saleId: 42 }
   }
@@ -64,11 +66,33 @@ test('lost sale responses retain the original UUID and payload across a reload',
   otherUser.dispose()
   const reloaded = create(1)
   loseResponse = false
+  for (const statusCode of [401, 403, 407, 408, 425, 429, 502]) {
+    rejection = { statusCode }
+    await reloaded.send('/sales', () => { throw new Error('must reuse original body') })
+    assert.equal(reloaded.submission.value.body.requestId, payload.requestId)
+    assert.ok(saved.has('sale-create-1'))
+  }
+  rejection = undefined
   assert.equal((await reloaded.send('/sales', () => { throw new Error('must reuse original body') })).saleId, 42)
   assert.equal(JSON.stringify(calls[0]), JSON.stringify(calls[1]))
+  assert.equal(JSON.stringify(calls[0]), JSON.stringify(calls.at(-1)))
   assert.equal(reloaded.submission.value, null)
   assert.equal(saved.has('sale-create-1'), false)
+  rejection = { statusCode: 400 }
+  await reloaded.send('/sales', () => ({ ...payload, requestId: 'rejected-id' }))
+  assert.equal(reloaded.submission.value, null)
+  assert.equal(saved.has('sale-create-1'), false)
+  rejection = { statusCode: 403, data: { code: 'PROMOTION_NOT_ALLOWED' } }
+  await reloaded.send('/sales', () => ({ ...payload, requestId: 'denied-promotion-id' }))
+  assert.equal(reloaded.submission.value, null)
   reloaded.dispose()
+})
+
+test('only business rejections unlock an operation; guard and transport errors keep its UUID', () => {
+  assert.equal(isConfirmedOperationRejection({ status: 403, data: { code: 'PROMOTION_NOT_ALLOWED' } }), true)
+  for (const status of [400, 404, 409, 422]) assert.equal(isConfirmedOperationRejection({ status }), true)
+  for (const status of [401, 403, 407, 408, 425, 429, 500, 502, 503]) assert.equal(isConfirmedOperationRejection({ status }), false)
+  assert.equal(isConfirmedOperationRejection(new Error('connection lost')), false)
 })
 
 test('initial pagination clamps after data is ready, including an empty result', async () => {

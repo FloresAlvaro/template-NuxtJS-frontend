@@ -2,12 +2,12 @@
 import type { CashShiftApi } from '~/types/cash'
 import type { SaleApi, SaleOperationApi } from '~/types/sale'
 import type { TableColumn } from '@nuxt/ui'
-import { apiErrorStatus } from '~/utils/api-error'
+import { apiErrorStatus, isConfirmedOperationRejection } from '~/utils/api-error'
 import { moneyCents } from '~/utils/money'
 const props = defineProps<{ sale: SaleApi }>()
 const emit = defineEmits<{ updated: [sale: SaleApi] }>()
 const api = useApi()
-const { isAdmin } = useAuth()
+const { isAdmin, user } = useAuth()
 const {
   data: cashShift,
   error: cashError,
@@ -26,7 +26,7 @@ const submitted = ref<{ path: string; body: Record<string, unknown> } | null>(
 )
 const message = ref('')
 // Preserve the request identifier if a reload follows a lost response.
-const storageKey = `sale-operation-${props.sale.saleId}`
+const storageKey = `sale-operation-${user.value?.userId}-${props.sale.saleId}`
 onMounted(() => {
   try {
     const stored = sessionStorage.getItem(storageKey)
@@ -199,7 +199,8 @@ async function submit() {
       message.value = 'Operación registrada correctamente'
     } catch (cause) {
       const status = apiErrorStatus(cause)
-      if (status && status >= 400 && status < 500) submitted.value = null
+      if (isConfirmedOperationRejection(cause)) submitted.value = null
+      if (status === 401) throw new Error('Tu sesión venció. Recarga la página e ingresa con la misma cuenta para reintentar la operación pendiente.')
       throw cause
     }
   }, 'No se pudo registrar la operación')
