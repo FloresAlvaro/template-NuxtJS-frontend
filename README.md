@@ -1,79 +1,91 @@
-# Nuxt Minimal Starter
+# Frontend de Tienda
 
-Look at the [Nuxt documentation](https://nuxt.com/docs/getting-started/introduction) to learn more.
+Template de tienda y gestión comercial con Nuxt 4, Vue 3, Nuxt UI 4 y Tailwind CSS.
+Usa SSR y un proxy Nitro hacia el backend NestJS. Estado actualizado al 14/10/2026.
 
-## Setup
+## Instalación y ejecución local
 
-Make sure to install dependencies:
-
-```bash
-# npm
-npm install
-
-# pnpm
-pnpm install
-
-# yarn
-yarn install
-
-# bun
-bun install
-```
-
-## Development Server
-
-Start the development server on `http://localhost:3000`:
+Usa pnpm y el `pnpm-lock.yaml` del repositorio:
 
 ```bash
-# npm
-npm run dev
-
-# pnpm
+pnpm install --frozen-lockfile
 pnpm dev
-
-# yarn
-yarn dev
-
-# bun
-bun run dev
 ```
 
-## Production
-
-Build the application for production:
+Abre http://localhost:3000. El backend debe estar disponible en
+http://localhost:3001/api. Para iniciarlo con PostgreSQL y Mailpit, desde su carpeta:
 
 ```bash
-# npm
-npm run build
+docker compose up -d --build --wait
+```
 
-# pnpm
+Consulta el [README del backend](../template-NestJS-backend/README.md) para crear
+el primer administrador y cargar catálogo o demo. El seed se ejecuta en el backend,
+no en este repositorio; `pnpm build` solo compila el frontend. La demo requiere un
+ADMIN activo existente y solicita una contraseña para las cuentas ficticias.
+
+El destino privado del proxy se configura con `NUXT_BACKEND_API_BASE`. Para usar
+otro backend en macOS/Linux:
+
+```bash
+NUXT_BACKEND_API_BASE=http://localhost:3001/api pnpm dev
+```
+
+No expongas el backend ni credenciales mediante `runtimeConfig.public`.
+
+## Compilación y publicación
+
+```bash
+pnpm typecheck
 pnpm build
-
-# yarn
-yarn build
-
-# bun
-bun run build
+pnpm preview
 ```
 
-Locally preview production build:
+`preview` sirve para revisar la compilación local. Para ejecutar la salida de
+producción con Node:
 
 ```bash
-# npm
-npm run preview
-
-# pnpm
-pnpm preview
-
-# yarn
-yarn preview
-
-# bun
-bun run preview
+node .output/server/index.mjs
 ```
 
-Check out the [deployment documentation](https://nuxt.com/docs/getting-started/deployment) for more information.
-# template-NuxtJS-frontend
+Configura `NUXT_BACKEND_API_BASE` en el servidor y el origen HTTPS público en
+`TRUSTED_ORIGINS`, `COOKIE_SECURE=true` y `PASSWORD_RESET_URL` del backend.
+El proxy requiere un servidor Nuxt/Nitro: `generate` y un hosting estático no
+sustituyen este despliegue. Mailpit es local; producción requiere correo real.
+
+## Organización del código
+
+Las páginas conservan las rutas de Nuxt. Los componentes se agrupan por su
+responsabilidad dentro de `app/components`:
+
+- `products`, `categories`, `customers`, `sales`, `orders` y `reports`: interfaz de cada área.
+- `auth`: formularios y controles de acceso.
+- `layout`: cabecera, pie y presentación del espacio de trabajo.
+- `shared`: tablas, paginación, botones, modales y estado reutilizables.
+
+Los composables se organizan en `app/composables/api`, `auth`, `catalog` y
+`shared`. `nuxt.config.ts` habilita su búsqueda en subcarpetas y conserva los
+nombres de componentes sin prefijos de carpeta. Mantén nombres únicos y
+descriptivos al añadir componentes.
+
+`app/utils` contiene funciones puras compartidas y `app/types` los contratos de
+la API. Usa `useSearchText` para búsquedas con debounce y `formatStoreDate`, de
+`app/utils/date.ts`, para presentar fechas y horas en la zona de la tienda.
+La agrupación de fechas de reportes mantiene sus reglas específicas.
+
+## Funciones implementadas
+
+| Área | Estado |
+| --- | --- |
+| Catálogo y fotos | Tarjetas públicas, paginación, disponibilidad; gestión de una foto por producto |
+| Acceso | Login, registro CUSTOMER, perfil, cambio y recuperación de contraseña |
+| Gestión | Usuarios, categorías, subcategorías, productos y clientes con permisos por rol |
+| Inventario | Stock físico/reservado/disponible, mínimos e historial de movimientos |
+| Ventas | Alta, detalle histórico, cobros manuales, devoluciones, anulaciones y reembolsos |
+| Pedidos | Reserva, confirmación, preparación y retiro; consulta/cancelación propia |
+| Proveedores y compras | ADMIN: proveedores, compras pendientes, recepción completa, costos opcionales y cancelación con historial |
+| Reportes | Seis gráficos ADMIN, filtros de período, tablas exactas y estados de error/reintento |
+| Diseño | Navegación por rol, móvil/escritorio y modo claro/oscuro |
 
 ## Acceso por roles
 
@@ -81,9 +93,32 @@ El frontend incluye `/login`, `/register`, `/account`, `/users` (solo administra
 
 Las peticiones usan `/api` en el mismo origen. `server/api/[...path].ts` reenvía al backend configurado mediante `NUXT_BACKEND_API_BASE` (por defecto http://localhost:3001/api), conservando cookies HttpOnly. No se almacena el token en localStorage. Se requiere un servidor Nuxt/Nitro; un hosting de archivos estáticos por sí solo no ejecuta este proxy.
 
-Crea el primer administrador con el comando interactivo documentado en el README del backend. Para publicar, configura el origen HTTPS en TRUSTED_ORIGINS del backend y COOKIE_SECURE=true. El registro público crea únicamente cuentas de cliente. La recuperación de contraseña y los pedidos de retiro están integrados; las imágenes de productos siguen pendientes en la interfaz.
+Crea el primer administrador con el comando interactivo documentado en el README del backend. Para publicar, configura el origen HTTPS en TRUSTED_ORIGINS del backend y COOKIE_SECURE=true. El registro público crea únicamente cuentas de cliente. La recuperación de contraseña y los pedidos de retiro están integrados; las imágenes de productos se muestran en el catálogo y se gestionan desde Productos.
 
 Validaciones: `pnpm typecheck` y `pnpm build`.
+
+Regresiones: `node --test tests/*.test.mjs`. Cubren recuperación de ventas tras
+respuesta perdida/recarga, aislamiento por usuario, paginación inicial, errores
+de sesión y firma privada del proxy, además de promociones.
+
+Las ventas pendientes guardan su UUID y payload en sessionStorage por usuario;
+tras recargar se reenvía exactamente la misma operación. Si el navegador bloquea
+ese almacenamiento, los reintentos solo se conservan mientras la página siga
+abierta. Los errores de sesión, permisos, timeout o límite de solicitudes no
+borran un envío pendiente: un rechazo del reintento no demuestra que el primer
+intento no se guardó. Un rechazo de promoción con código `PROMOTION_NOT_ALLOWED`
+permite corregirla. Los cobros/reembolsos también guardan su envío por usuario.
+Antes de actualizar desde una versión que guardaba operaciones solo por venta,
+confirma cualquier operación pendiente con esa versión; las claves antiguas sin
+usuario no se atribuyen automáticamente a otra cuenta.
+Las páginas públicas muestran un aviso cuando falla la sesión; las
+privadas responden 503 sin conservar permisos de una sesión no comprobada.
+
+Para separar los clientes del proxy en el límite de acceso, configura
+`NUXT_AUTH_PROXY_SECRET` y `AUTH_PROXY_SECRET` en Nest con el mismo secreto
+aleatorio privado de al menos 32 caracteres. Nuxt firma la IP de su conexión
+entrante y descarta afirmaciones recibidas del navegador; no confía en
+X-Forwarded-For. Ver [frontera de confianza](../template-NestJS-backend/docs/auth-throttle.md).
 
 ## Inventario
 
@@ -97,6 +132,27 @@ Los productos empiezan en cero: registra una entrada para cargar existencias ini
 Un ajuste usa la cantidad final contada y detecta si el saldo cambió desde la consulta.
 Si ocurre un conflicto, pulsa Actualizar y revisa la cantidad antes de reintentar.
 Las ventas registradas descuentan stock automáticamente. El inventario distingue stock físico, reservado y disponible para venta. Las reservas vigentes de pedidos se descuentan de la disponibilidad.
+
+## Proveedores y compras
+
+ADMIN dispone de Proveedores y Compras en Administración. Proveedores permite
+búsqueda, alta, edición y baja lógica; su botón Compras filtra el historial.
+Los filtros de estas listas se conservan en la URL.
+
+Nueva compra permite buscar proveedores activos y productos por SKU/nombre,
+indicar cantidades y costos unitarios y registrar una compra pendiente. El
+servidor calcula el total y conserva los datos históricos. Registrar la compra
+no cambia el inventario ni representa un pago al proveedor.
+
+Desde su detalle se recibe toda la mercadería, con una confirmación explícita y
+nota, o se cancela mientras esté pendiente. Actualizar el costo del producto es
+opcional; el precio de venta se conserva. Cada recepción genera entradas de
+inventario enlazadas a la compra. Los reintentos mantienen UUID y contenido,
+también al recargar cuando sessionStorage está disponible.
+
+Aplica la migración `20261014180000_suppliers_purchases` y actualiza el backend
+antes de usar estas vistas. SELLER y CUSTOMER no tienen acceso a estos costos.
+Recepciones parciales, devoluciones al proveedor y pagos quedan fuera de esta versión.
 
 ## Clientes y ventas
 
@@ -145,4 +201,151 @@ Si Nuxt utiliza otro origen, configura PASSWORD_RESET_URL con su URL /reset-pass
 TRUSTED_ORIGINS con ese origen. En local, Mailpit en http://localhost:8025 captura el
 correo; no entrega mensajes a Internet. Configura SMTP real antes de publicar.
 
-Las imágenes siguen pendientes de integración por decisión del usuario.
+## Interfaz y fotos de productos
+
+La interfaz usa una base violeta con acentos cálidos, adaptable a otra marca desde
+`app/app.config.ts` y `app/assets/css/main.css`. Inicio ofrece accesos por rol;
+ADMIN/SELLER tienen navegación lateral en escritorio y menú agrupado en móvil.
+Los clientes y visitantes disponen de navegación superior y catálogo de tarjetas.
+Se conservan modo claro/oscuro, foco visible y preferencias de movimiento reducido.
+
+El catálogo muestra `imageUrl`, disponibilidad real y confirmación visual al
+agregar productos al pedido. La página del catálogo se conserva en la URL.
+No se añaden filtros de búsqueda públicos: el endpoint actual solo permite paginación.
+
+En Productos, Foto permite consultar la imagen a ADMIN/SELLER. ADMIN puede
+seleccionar, previsualizar, guardar, reemplazar o eliminar una foto con confirmación.
+Primero crea el producto y después carga su foto. Se admiten JPEG, PNG y WebP
+estáticos de hasta 5 MiB; el servidor valida un máximo de 16 megapíxeles y normaliza
+a WebP. Los errores conservan la selección para reintentar y los productos sin foto
+muestran un estado alternativo. Las operaciones usan el proxy `/api` existente.
+
+Verificación del rediseño: typecheck y build; revisión en navegador a 1440 y 390 px
+con una API temporal y datos ficticios (roles, carrito, fotos, vacío y error).
+La API de imágenes tiene pruebas HTTP con PostgreSQL real en el backend; la revisión
+visual del gestor durante el rediseño utilizó una API temporal de datos ficticios.
+Estas comprobaciones tienen alcances diferentes.
+
+## Acceso y registro
+
+Login y registro comparten una presentación adaptable: panel de bienvenida en
+escritorio y encabezado compacto en móvil. Los campos conservan autocompletado,
+etiquetas accesibles y límites de la API; las contraseñas pueden mostrarse u
+ocultarse individualmente. Durante el envío se bloquean campos y botón.
+
+Registro muestra ayuda de longitud y coincidencia de contraseña, conserva los
+datos ante errores y confirma la creación desde login antes de iniciar sesión.
+El enlace entre ambas pantallas conserva el destino solicitado; login sigue
+validando que ese destino sea una ruta interna permitida. Los errores de acceso,
+correo registrado y límite de intentos tienen mensajes en español.
+
+Verificación: typecheck y build; revisión visual en móvil y escritorio, modo claro
+y oscuro, y flujos de registro/login con una API temporal de datos ficticios.
+No se crearon usuarios adicionales en la base habitual durante esta revisión.
+
+
+## Gráficos de Reportes
+
+Reportes (ADMIN) incluye evolución diaria/mensual de ventas netas, top 10 productos
+por unidades o importe, top 10 vendedores, cobros por efectivo/tarjeta/transferencia,
+estado del inventario físico y stock frente al mínimo. Cada gráfico tiene datos
+exactos en una tabla desplegable y estados de carga, vacío, error y reintento.
+La evolución admite consulta de puntos con el ratón o el selector por teclado.
+
+Las ventas netas reflejan devoluciones y anulaciones actuales de ventas creadas
+en el período; no son un cierre de caja ni ganancias. Los cobros se seleccionan
+por la fecha de la operación PAYMENT y no descuentan reembolsos. El inventario es
+actual y físico; las alertas muestran también reservas y disponibilidad real.
+Las fechas (máximo 366 días), agrupación, ranking y página de alertas se guardan
+en la URL. Los importes se conservan exactos; las proporciones del dibujo usan
+BigInt y se muestran sin bibliotecas adicionales de gráficos.
+
+Requiere actualizar el backend para disponer de `/reports/sales-series`,
+`/reports/sellers`, `/reports/payment-methods`, la métrica de `/top-products` y
+las reservas/disponibilidad añadidas a `/low-stock`. Consulta el contrato en
+`docs/reports-api.md` del backend.
+
+## Validación y límites actuales
+
+La última ampliación de reportes pasó `pnpm typecheck` y `pnpm build`, además de
+revisión manual con API NestJS/PostgreSQL aislados: filtros, navegación/recarga,
+rankings, tablas, teclado, estados vacíos/error/reintento y móvil de 390 px.
+El backend validó 72 pruebas unitarias y 127 de integración; esos conteos no son
+pruebas automatizadas del frontend. Este repositorio no define scripts de tests
+ni lint, ni workflows CI versionados. No se modificó la base habitual en las pruebas.
+
+## Pendientes
+
+- Búsqueda y filtros públicos por nombre/SKU, categoría, precio y disponibilidad;
+  primero requiere ampliar el contrato del backend, que hoy solo admite paginación.
+- Carrito persistente: la selección actual vive en la página; conservar un UUID
+  de envío pendiente no equivale a guardar el carrito entre visitas.
+- Notificaciones de pedidos y alertas de inventario.
+- Caja, comprobantes imprimibles y exportaciones CSV/PDF.
+- Proveedores/compras, descuentos, metas y análisis de rentabilidad.
+- Pasarela de pagos, envíos y facturación fiscal, según alcance comercial.
+- Pruebas automatizadas de navegación y CI; operación de producción, backups,
+  restauración y monitoreo coordinados con el backend.
+
+El embudo de conversión requiere medir visitas y pasos del cliente; metas requieren
+objetivos registrados; comparación de ingresos/costos requiere compras/gastos.
+No se generan esos gráficos a partir de datos que el proyecto todavía no registra.
+Consulta la [matriz de permisos y backlog del backend](../template-NestJS-backend/docs/permissions-and-backlog.md).
+
+## Interfaz de ventas
+
+Lista, nueva venta y detalle comparten `WorkspaceHeader`, colores, iconos y
+jerarquía visual. `SaleStatusBadge` unifica los estados; la lista destaca el total
+vigente y el detalle separa total, deuda y reembolso. Nueva venta presenta los
+pasos, la selección del cliente, disponibilidad por producto y resumen del total.
+Se conservan permisos, confirmación manual de cobros y reintentos idempotentes.
+
+Verificación: typecheck/build y navegador en escritorio/móvil con una API temporal
+de solo lectura y datos ficticios. Se revisaron selección, cantidades y total,
+producto agotado, estados y detalle. No se registraron ventas ni cobros reales.
+
+## Interfaz de usuarios
+
+Usuarios (ADMIN) comparte el encabezado y tabla del espacio de gestión, explica
+los tres roles, muestra estado e identifica la propia cuenta. Creación, edición
+y restablecimiento usan modales consistentes; se bloquean los campos y el cierre
+durante el envío, y se impiden envíos simultáneos. La contraseña puede mostrarse
+u ocultarse; el backend conserva la autoridad sobre permisos y restricciones.
+La propia cuenta no permite cambiar su rol ni desactivarse desde esta pantalla.
+
+La API de usuarios solo permite paginación: no se añaden búsquedas o filtros
+locales que aparenten consultar todas las cuentas. Verificación: typecheck/build
+y revisión de la versión compilada con una API de solo lectura, usuarios ficticios,
+modales y ambos temas en escritorio/móvil. No se crearon cuentas ni se
+restablecieron contraseñas reales durante la revisión.
+
+## Caja y alertas operativas
+
+/cash permite abrir el turno propio, gestionar efectivo, consultar el historial y cerrar con arqueo. ADMIN administra cajas y consulta todos los turnos; SELLER solo los propios. El efectivo esperado excluye tarjeta y transferencia. Cobros y reembolsos desde ventas exigen turno abierto y envían su identificador. Reintentos conservan UUID y contenido tras recargar.
+
+/stock-alerts ofrece búsqueda SKU/nombre, filtros de agotados/stock bajo, existencias físicas/reservadas/disponibles, mínimo y reposición sugerida. Inicio muestra el aviso con los totales. Se actualiza cada minuto y al recuperar el foco. ADMIN puede gestionar inventario y crear compras; SELLER solo consulta inventario. Son avisos dentro de la aplicación, sin envío de correo/push. Ver [contrato backend](../template-NestJS-backend/docs/cash-and-stock-alerts-api.md).
+
+## Auditoría, avisos y promociones
+
+/audit (ADMIN) filtra por entidad/registro/responsable y muestra cambios anteriores/nuevos. /notifications muestra avisos propios CUSTOMER y entrega/reintentos de correo ADMIN. La campana CUSTOMER indica avisos sin leer. /promotions administra configuración ADMIN y consulta promociones elegibles SELLER. Nueva venta permite una promoción porcentual; detalle muestra el descuento histórico. Fechas en America/La_Paz y vista previa con BigInt/redondeo por unidad.
+
+Pruebas de lógica: Node 24, `node --test tests/promotion.test.mjs`. Ver [contrato y alcance](../template-NestJS-backend/docs/admin-features-api.md). No se aplican promociones a pedidos de autoservicio en esta versión.
+
+## CI y actualización coordinada
+
+`.github/workflows/ci.yml` publica `Frontend checks` para cada PR a master y cada
+cambio integrado: instalación con pnpm 11.9.0/lockfile, pruebas, tipos, build y
+comprobación HTTP de SSR público durante una caída de API. No requiere backend ni
+secretos reales y no despliega automáticamente. La suite completa de navegador
+sigue pendiente.
+
+Para ejecutar la salida compilada local con sus variables privadas en Node 24:
+
+```bash
+node --env-file=.env .output/server/index.mjs
+```
+
+El secreto de .env debe coincidir con AUTH_PROXY_SECRET del backend. Antes de
+actualizar una instancia con datos, confirmar los envíos antiguos pendientes,
+comprobar un backup restaurable y actualizar primero backend/migraciones. Ver
+[procedimiento coordinado](../template-NestJS-backend/docs/deployment.md).

@@ -1,6 +1,6 @@
 import { h } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
-import ActiveStatusBadge from '~/components/ActiveStatusBadge.vue'
+import ActiveStatusBadge from '~/components/shared/ActiveStatusBadge.vue'
 
 export function activeStatusColumn<T extends { isActive: boolean }>(feminine = false): TableColumn<T> {
   return {

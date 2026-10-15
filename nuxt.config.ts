@@ -4,6 +4,8 @@ export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
   modules: ['@nuxt/ui', '@nuxt/icon', '@nuxt/fonts', '@nuxt/image'],
+  components: [{ path: '~/components', pathPrefix: false }],
+  imports: { dirs: ['composables/**'] },
   css: ['~/assets/css/main.css'],
   routeRules: {
     '/reset-password': {
@@ -21,6 +23,7 @@ export default defineNuxtConfig({
     },
   },
   runtimeConfig: {
+    authProxySecret: '',
     backendApiBase: 'http://localhost:3001/api',
     public: {
       apiBase: '/api',

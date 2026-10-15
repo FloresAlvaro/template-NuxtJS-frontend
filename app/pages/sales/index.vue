@@ -24,9 +24,6 @@ const { data, pending, error, refresh } = await useApiFetch<SalePage>(
     query: { page, search, customerId, limit: 20 },
   },
 )
-const totalPages = computed(() =>
-  Math.max(1, Math.ceil((data.value?.total ?? 0) / 20)),
-)
 const columns: TableColumn<SaleApi>[] = [
   {
     accessorKey: 'saleId',
@@ -39,11 +36,9 @@ const columns: TableColumn<SaleApi>[] = [
     accessorKey: 'createdAt',
     header: 'Fecha',
     cell: ({ row }) =>
-      new Date(row.original.createdAt).toLocaleString('es-BO', {
-        timeZone: 'America/La_Paz',
-      }),
+      formatStoreDate(row.original.createdAt),
   },
-  { accessorKey: 'total', header: 'Total original' },
+  { accessorKey: 'adjustedTotal', header: 'Total vigente' },
   {
     accessorKey: 'status',
     header: 'Estado',
@@ -55,17 +50,13 @@ const columns: TableColumn<SaleApi>[] = [
 ]
 </script>
 <template>
-  <div class="space-y-4">
+  <div class="space-y-6">
     <UBreadcrumb :items="[{ label: 'Inicio', to: '/' }, { label: 'Ventas' }]" />
-    <div class="flex items-center justify-between">
-      <h1 class="text-xl font-bold">Ventas</h1>
-      <UButton to="/sales/new" icon="i-lucide-plus">Nueva venta</UButton>
-    </div>
-    <UAlert
-      color="info"
-      title="Ventas registradas"
-      description="Consulta cobros, devoluciones y anulaciones desde el detalle de cada venta. Registrar una venta descuenta las existencias."
-    />
+    <WorkspaceHeader eyebrow="Gestión comercial" title="Ventas" icon="i-lucide-receipt" description="Cada venta, con sus productos, cobros y movimientos en un mismo lugar.">
+      <template #actions><UButton to="/sales/new" icon="i-lucide-plus" size="lg" color="neutral" :ui="{ base: 'bg-white text-violet-950 hover:bg-violet-100' }">Nueva venta</UButton></template>
+    </WorkspaceHeader>
+    <div class="flex items-start gap-3 rounded-2xl border border-default bg-default p-5"><span class="rounded-xl bg-primary/10 p-2 text-primary"><UIcon name="i-lucide-wallet" class="size-5" /></span><div><h2 class="font-semibold">Consulta y seguimiento</h2><p class="mt-1 text-sm text-muted">Abre una venta para registrar cobros o consultar devoluciones y anulaciones. Registrar una venta descuenta stock; el cobro se registra por separado.</p></div></div>
+    <UCard>
     <UFormField label="Buscar venta"
       ><UInput
         v-model="input"
@@ -74,6 +65,7 @@ const columns: TableColumn<SaleApi>[] = [
         :maxlength="150"
         class="w-full"
     /></UFormField>
+    </UCard>
     <div v-if="customerId" class="flex gap-3 items-center">
       <span>Ventas del cliente #{{ customerId }}</span
       ><UButton color="neutral" variant="outline" to="/sales"
@@ -95,7 +87,12 @@ const columns: TableColumn<SaleApi>[] = [
       v-else-if="data?.items.length"
       :data="data.items"
       :columns="columns"
-      ><template #actions="{ row }"
+      >
+      <template #saleId="{ row }"><span class="font-bold text-primary">#{{ row.original.saleId }}</span></template>
+      <template #status="{ row }"><SaleStatusBadge :status="row.original.status" /></template>
+      <template #adjustedTotal="{ row }"><span class="font-semibold tabular-nums">{{ row.original.adjustedTotal }}</span></template>
+      <template #balanceDue="{ row }"><span class="tabular-nums" :class="row.original.balanceDue !== '0.00' ? 'text-warning font-semibold' : 'text-muted'">{{ row.original.balanceDue }}</span></template>
+      <template #actions="{ row }"
         ><UButton
           icon="i-lucide-eye"
           color="neutral"
@@ -105,34 +102,7 @@ const columns: TableColumn<SaleApi>[] = [
         ></template
       ></GenericTable
     >
-    <p v-else>No hay ventas que coincidan con los filtros.</p>
-    <div class="flex items-center justify-between">
-      <span class="text-sm"
-        >{{ data?.total ?? 0 }} ventas · {{ page }} / {{ totalPages }}</span
-      >
-      <div class="flex gap-2">
-        <UButton
-          color="neutral"
-          variant="outline"
-          :disabled="page <= 1 || pending"
-          @click="
-            () => {
-              page--
-            }
-          "
-          >Anterior</UButton
-        ><UButton
-          color="neutral"
-          variant="outline"
-          :disabled="page >= totalPages || pending"
-          @click="
-            () => {
-              page++
-            }
-          "
-          >Siguiente</UButton
-        >
-      </div>
-    </div>
+    <div v-else class="rounded-2xl border border-dashed border-default p-10 text-center"><UIcon name="i-lucide-receipt" class="size-10 text-muted" /><h2 class="mt-3 font-semibold">Sin ventas para mostrar</h2><p class="mt-2 text-sm text-muted">Prueba otra búsqueda o registra una nueva venta.</p></div>
+    <ListPagination v-if="data && !error" v-model="page" :total="data.total" :limit="20" :pending="pending" label="ventas" />
   </div>
 </template>

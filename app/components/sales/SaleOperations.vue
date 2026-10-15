@@ -1,12 +1,18 @@
 <script setup lang="ts">
+import type { CashShiftApi } from '~/types/cash'
 import type { SaleApi, SaleOperationApi } from '~/types/sale'
 import type { TableColumn } from '@nuxt/ui'
-import { apiErrorStatus } from '~/utils/api-error'
+import { apiErrorStatus, isConfirmedOperationRejection } from '~/utils/api-error'
 import { moneyCents } from '~/utils/money'
 const props = defineProps<{ sale: SaleApi }>()
 const emit = defineEmits<{ updated: [sale: SaleApi] }>()
 const api = useApi()
-const { isAdmin } = useAuth()
+const { isAdmin, user } = useAuth()
+const {
+  data: cashShift,
+  error: cashError,
+  refresh: refreshCash,
+} = await useApiFetch<CashShiftApi | null>('/cash/shifts/current')
 const { pending, error, run } = useAsyncAction()
 type Action = 'payments' | 'refunds' | 'returns' | 'cancel'
 const action = ref<Action>('payments')
@@ -20,7 +26,7 @@ const submitted = ref<{ path: string; body: Record<string, unknown> } | null>(
 )
 const message = ref('')
 // Preserve the request identifier if a reload follows a lost response.
-const storageKey = `sale-operation-${props.sale.saleId}`
+const storageKey = `sale-operation-${user.value?.userId}-${props.sale.saleId}`
 onMounted(() => {
   try {
     const stored = sessionStorage.getItem(storageKey)
@@ -111,15 +117,18 @@ const columns: TableColumn<SaleOperationApi>[] = [
     cell: ({ row }) =>
       row.original.method ? paymentMethodLabels[row.original.method] : '—',
   },
+  {
+    id: 'shift',
+    header: 'Turno',
+    cell: ({ row }) =>
+      row.original.cashMovement ? '#' + row.original.cashMovement.shiftId : '—',
+  },
   { accessorKey: 'reason', header: 'Motivo / referencia' },
   { accessorKey: 'userName', header: 'Registrado por' },
   {
     accessorKey: 'createdAt',
     header: 'Fecha',
-    cell: ({ row }) =>
-      new Date(row.original.createdAt).toLocaleString('es-BO', {
-        timeZone: 'America/La_Paz',
-      }),
+    cell: ({ row }) => formatStoreDate(row.original.createdAt),
   },
   { id: 'items', header: 'Productos repuestos' },
 ]
@@ -143,6 +152,12 @@ async function submit() {
         body.amount = `${whole}.${fraction.padEnd(2, '0')}`
         if (moneyCents(body.amount as string) <= 0n)
           throw new Error('El importe debe ser mayor que cero')
+        await refreshCash()
+        if (cashError.value || !cashShift.value)
+          throw new Error(
+            'Abre tu turno de caja antes de registrar un cobro o reembolso',
+          )
+        body.cashShiftId = cashShift.value.shiftId
         body.method = method.value
       }
       if (action.value === 'returns') {
@@ -184,7 +199,8 @@ async function submit() {
       message.value = 'Operación registrada correctamente'
     } catch (cause) {
       const status = apiErrorStatus(cause)
-      if (status && status >= 400 && status < 500) submitted.value = null
+      if (isConfirmedOperationRejection(cause)) submitted.value = null
+      if (status === 401) throw new Error('Tu sesión venció. Recarga la página e ingresa con la misma cuenta para reintentar la operación pendiente.')
       throw cause
     }
   }, 'No se pudo registrar la operación')
@@ -200,7 +216,23 @@ async function submit() {
     />
     <UCard v-if="options.length || submitted">
       <template #header
-        ><h2 class="font-semibold">Gestionar venta</h2></template
+        ><h2 class="flex items-center gap-2 font-semibold">
+          <UIcon name="i-lucide-wallet" class="size-5 text-primary" />Gestionar
+          venta
+        </h2></template
+      >
+      <UAlert
+        v-if="
+          (action === 'payments' || action === 'refunds') &&
+          !cashShift &&
+          !submitted
+        "
+        class="mb-4"
+        color="warning"
+        title="Necesitas un turno abierto"
+        ><template #actions
+          ><UButton to="/cash">Ir a caja</UButton></template
+        ></UAlert
       >
       <form class="space-y-4" @submit.prevent="submit">
         <UFormField label="Operación"
@@ -217,6 +249,7 @@ async function submit() {
           <UFormField label="Importe"
             ><UInput
               v-model="amount"
+              :id="'sale-operation-amount-' + sale.saleId"
               inputmode="decimal"
               placeholder="0.00"
               :disabled="locked"
@@ -267,6 +300,7 @@ async function submit() {
         <UFormField label="Motivo / referencia"
           ><UTextarea
             v-model="reason"
+            :id="'sale-operation-reason-' + sale.saleId"
             :maxlength="500"
             :disabled="locked"
             class="w-full"
@@ -291,7 +325,12 @@ async function submit() {
         <UButton
           type="submit"
           :loading="pending"
-          :disabled="!confirmed && !submitted"
+          :disabled="
+            (!confirmed ||
+              ((action === 'payments' || action === 'refunds') &&
+                !cashShift)) &&
+            !submitted
+          "
           >{{
             submitted ? 'Reintentar operación' : 'Registrar operación'
           }}</UButton
@@ -303,7 +342,12 @@ async function submit() {
       </p>
     </UCard>
     <UAlert v-if="message" color="success" :title="message" />
-    <h2 class="font-semibold">Historial de operaciones</h2>
+    <div>
+      <h2 class="text-lg font-bold">Historial de operaciones</h2>
+      <p class="mt-1 text-sm text-muted">
+        Cobros, reembolsos y reposiciones registrados para esta venta.
+      </p>
+    </div>
     <GenericTable
       v-if="sale.operations.length"
       :data="sale.operations"
@@ -320,8 +364,11 @@ async function submit() {
         }}</span></template
       >
     </GenericTable>
-    <p v-else class="text-sm text-muted">
+    <div
+      v-else
+      class="rounded-2xl border border-dashed border-default p-6 text-sm text-muted"
+    >
       Esta venta aún no tiene cobros, devoluciones ni anulaciones.
-    </p>
+    </div>
   </section>
 </template>

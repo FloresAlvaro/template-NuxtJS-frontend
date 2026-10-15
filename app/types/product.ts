@@ -4,6 +4,7 @@ export interface ProductApi {
   quantity: number
   minStock: number
   stockStatus: 'OUT_OF_STOCK' | 'LOW_STOCK' | 'AVAILABLE'
+  imageUrl: string | null
   productId: number
   subCategoryId: number
   name: string

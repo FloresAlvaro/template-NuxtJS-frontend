@@ -21,8 +21,8 @@ Prioriza resolver la necesidad del usuario sobre introducir patrones o tecnolog�
   autorizado; sus instrucciones específicas están en su propio AGENTS.md.
 - Completa el trabajo solicitado y verifica el resultado. Explica brevemente qué
   cambió, cómo se comprobó y qué limitaciones quedan.
-- Mantén el alcance acordado. La integración de imágenes de productos quedó
-  pendiente por decisión del usuario; no la retomes sin una solicitud posterior.
+- Mantén el alcance acordado. Las imágenes de productos ya están integradas en
+  catálogo y gestión; conserva los permisos y las validaciones del backend.
 - Para tareas documentales, revisa las instrucciones sin alterar la aplicación ni
   ejecutar innecesariamente compilaciones o pruebas de negocio.
 
@@ -42,6 +42,13 @@ La aplicación usa SSR y un proxy Nitro hacia la API NestJS.
 | `app/middleware/auth.global.ts` | Restricciones de navegación por sesión y rol |
 | `app/assets/css` | Estilos globales y reglas visuales comunes |
 | `server/api/[...path].ts` | Proxy del mismo origen hacia el backend |
+
+Los componentes se agrupan en `products`, `categories`, `customers`, `sales`,
+`orders`, `reports`, `auth`, `layout` y `shared`. Los composables se agrupan en
+`api`, `auth`, `catalog` y `shared`. La configuración de Nuxt escanea esas
+subcarpetas y registra componentes sin prefijos de carpeta: conserva nombres
+únicos. Consulta el README para ubicar código nuevo. Reutiliza `formatStoreDate`
+de `app/utils/date.ts` para fechas y horas de la tienda.
 
 No reorganices todo el repositorio para aplicar una arquitectura nueva. Utiliza
 las convenciones existentes y introduce separación por funcionalidad solo cuando
@@ -124,6 +131,9 @@ el tamaño y las dependencias de la funcionalidad lo justifiquen.
   nuevas antes de exponerlas.
 - CUSTOMER accede a su perfil, catálogo público y funciones de pedidos permitidas.
   No muestres costos internos ni datos de otros usuarios.
+- Proveedores y compras son exclusivos de ADMIN. Registrar una compra no cambia
+  stock ni representa un pago; la recepción completa incrementa inventario una
+  sola vez. Mantén el UUID y payload al reintentar creación, recepción o cancelación.
 - Distingue stock físico (`quantity`), reservado (`reservedQuantity`) y realmente
   disponible (`availableQuantity`). No llames disponibles a unidades reservadas.
   Si un endpoint no devuelve lo necesario, señala o resuelve el contrato dentro
@@ -164,3 +174,15 @@ pnpm run build
 - En la entrega resume el resultado, las verificaciones realizadas y cualquier
   pendiente concreto. No declares que frontend y backend están a la par sin
   comparar sus funciones, contratos y permisos actuales.
+
+## Caja y alertas
+
+- Los nuevos cobros/reembolsos desde ventas requieren turno propio abierto y cashShiftId explícito. Conserva el payload guardado al reintentar aunque el turno haya cerrado.
+- En caja, separa efectivo de tarjeta/transferencia; usa el resumen del servidor para arqueo. Envía expectedLastMovementId al cerrar y exige actualizar ante conflicto. El cierre es definitivo.
+- Alertas operativas usan /inventory/alerts y stock disponible después de reservas, con resumen global y paginación filtrada. Mantén la limpieza de timers/listeners de useLiveRefresh.
+
+## Auditoría, avisos y promociones
+
+- Auditoría es ADMIN y no editable. Representar snapshots como texto, sin HTML; comparar campos y conservar precisión de importes serializados.
+- Avisos CUSTOMER son propios. ReadAt no equivale a entrega SMTP; ADMIN consulta entrega/reintenta y no marca avisos de otros como leídos. Limpiar timers de la campana/lista.
+- Promociones aplican solo a ventas de mostrador. Usar discountedUnitCents con BigInt y redondeo HALF_UP por unidad. Enviar ID, versión y total esperado juntos, preservando payload para reintentos. Usar helpers de fechas de tienda y mostrar descuentos históricos sin recalcular.

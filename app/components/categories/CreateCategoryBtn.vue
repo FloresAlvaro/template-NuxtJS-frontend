@@ -1,7 +1,7 @@
 <script setup lang="ts">
 const api = useApi()
 import { useModalAction } from '#imports'
-import { useAppToast } from '~/composables/useAppToast'
+import { useAppToast } from '~/composables/shared/useAppToast'
 
 const appToast = useAppToast()
 const { open, isSaving, submitError, openModal, closeModal, run } = useModalAction()
@@ -59,7 +59,7 @@ const handleSubmit = async () => {
       <UForm :state="state" class="space-y-4 p-2" @submit="handleSubmit">
         <UAlert v-if="submitError" color="error" variant="subtle" :title="submitError" />
 
-        <CategoriesCategoryFields
+        <CategoryFields
           v-model:name="state.name"
           v-model:description="state.description"
         />

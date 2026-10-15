@@ -1,6 +1,6 @@
-export function useSearchText() {
-  const input = ref('')
-  const search = ref('')
+export function useSearchText(initialValue = '') {
+  const input = ref(initialValue)
+  const search = ref(initialValue.trim())
   let timer: ReturnType<typeof setTimeout> | undefined
   watch(input, (value) => {
     clearTimeout(timer)

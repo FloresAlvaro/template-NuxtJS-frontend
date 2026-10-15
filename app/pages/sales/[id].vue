@@ -11,12 +11,14 @@ const columns: TableColumn<SaleItemApi>[] = [
   { accessorKey: 'productName', header: 'Producto' },
   { accessorKey: 'quantity', header: 'Cantidad vendida' },
   { accessorKey: 'returnedQuantity', header: 'Cantidad repuesta' },
+  {accessorKey:'listUnitPrice',header:'Precio de lista'},
+  {accessorKey:'unitDiscount',header:'Descuento / unidad'},
   { accessorKey: 'unitPrice', header: 'Precio aplicado' },
   { accessorKey: 'subtotal', header: 'Subtotal' },
 ]
 </script>
 <template>
-  <div class="space-y-4">
+  <div class="space-y-6">
     <UBreadcrumb
       :items="[
         { label: 'Inicio', to: '/' },
@@ -36,46 +38,25 @@ const columns: TableColumn<SaleItemApi>[] = [
       ></UAlert
     >
     <template v-else-if="data">
-      <h1 class="text-xl font-bold">Venta #{{ data.saleId }}</h1>
-      <dl class="grid sm:grid-cols-2 gap-2 text-sm">
-        <dt class="font-semibold">Cliente</dt>
-        <dd>{{ data.customerName }}</dd>
-        <dt class="font-semibold">Documento</dt>
-        <dd>{{ data.customerDocument || '—' }}</dd>
-        <dt class="font-semibold">Vendedor</dt>
-        <dd>{{ data.sellerName }}</dd>
-        <dt class="font-semibold">Fecha</dt>
-        <dd>
-          {{
-            new Date(data.createdAt).toLocaleString('es-BO', {
-              timeZone: 'America/La_Paz',
-            })
-          }}
-        </dd>
-      </dl>
-      <GenericTable :data="data.items" :columns="columns" />
-      <div class="grid sm:grid-cols-3 gap-3">
-        <UCard
-          ><p>Estado</p>
-          <strong>{{ saleStatusLabels[data.status] }}</strong></UCard
-        >
-        <UCard
-          ><p>Total original / vigente</p>
-          <strong>{{ data.total }} / {{ data.adjustedTotal }}</strong></UCard
-        >
-        <UCard
-          ><p>Cobrado / reembolsado</p>
-          <strong>{{ data.paid }} / {{ data.refunded }}</strong></UCard
-        >
-        <UCard
-          ><p>Saldo por cobrar</p>
-          <strong>{{ data.balanceDue }}</strong></UCard
-        >
-        <UCard
-          ><p>Pendiente de reembolso</p>
-          <strong>{{ data.refundDue }}</strong></UCard
-        >
+      <WorkspaceHeader eyebrow="Detalle de venta" :title="`Venta #${data.saleId}`" icon="i-lucide-receipt" description="Consulta los productos vendidos, el saldo actual y el historial de esta operación.">
+        <template #actions><UButton to="/sales" color="neutral" variant="outline" icon="i-lucide-arrow-left" :ui="{ base: 'bg-transparent text-white ring-white/30 hover:bg-white/10' }">Volver a ventas</UButton></template>
+      </WorkspaceHeader>
+      <div class="grid gap-4 sm:grid-cols-3">
+        <UCard><p class="text-sm text-muted">Total vigente</p><p class="mt-2 break-all text-3xl font-extrabold tabular-nums text-primary">{{ data.adjustedTotal }}</p><p class="mt-2 text-xs text-muted">Original: {{ data.total }}</p></UCard>
+        <UCard><p class="text-sm text-muted">Por cobrar</p><p class="mt-2 break-all text-3xl font-extrabold tabular-nums">{{ data.balanceDue }}</p><p class="mt-2 text-xs text-muted">Cobrado: {{ data.paid }}</p></UCard>
+        <UCard><p class="text-sm text-muted">Por reembolsar</p><p class="mt-2 break-all text-3xl font-extrabold tabular-nums" :class="data.refundDue !== '0.00' ? 'text-warning' : ''">{{ data.refundDue }}</p><p class="mt-2 text-xs text-muted">Reembolsado: {{ data.refunded }}</p></UCard>
       </div>
+      <UCard>
+        <template #header><div class="flex flex-wrap items-center justify-between gap-3"><h2 class="font-semibold">Información de la venta</h2><SaleStatusBadge :status="data.status" /></div></template>
+        <dl class="grid gap-5 text-sm sm:grid-cols-2 lg:grid-cols-4">
+          <div><dt class="text-muted">Cliente</dt><dd class="mt-1 font-semibold">{{ data.customerName }}</dd></div>
+          <div><dt class="text-muted">Documento</dt><dd class="mt-1 font-semibold">{{ data.customerDocument || 'Sin documento' }}</dd></div>
+          <div><dt class="text-muted">Vendedor</dt><dd class="mt-1 font-semibold">{{ data.sellerName }}</dd></div>
+          <div><dt class="text-muted">Fecha</dt><dd class="mt-1 font-semibold">{{ formatStoreDate(data.createdAt) }}</dd></div>
+        </dl>
+      </UCard>
+      <section class="space-y-3"><div><h2 class="text-lg font-bold">Productos vendidos</h2><p class="mt-1 text-sm text-muted">Precios originales y cantidades repuestas por devolución o anulación.</p></div><GenericTable :data="data.items" :columns="columns" /></section>
+      <UAlert v-if="data.promotionSnapshot" color="neutral" variant="subtle" icon="i-lucide-tag" :title="'Promoción aplicada: '+data.promotionSnapshot.code" :description="data.promotionSnapshot.name+' · Versión '+data.promotionSnapshot.version+' · Subtotal: '+data.grossTotal+' · Descuento: '+data.discountTotal+'. Las devoluciones utilizan el precio final aplicado.'" />
       <SaleOperations :sale="data" @updated="data = $event" />
       <UButton color="neutral" variant="outline" to="/sales"
         >Volver a ventas</UButton

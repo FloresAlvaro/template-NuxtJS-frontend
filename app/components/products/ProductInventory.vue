@@ -44,7 +44,6 @@ const valid = computed(
     form.reason.trim().length >= 3 &&
     form.reason.trim().length <= 500,
 )
-const totalPages = computed(() => Math.max(1, Math.ceil((history.value?.total ?? 0) / 10)))
 async function reload() {
   await Promise.all([refresh(), refreshHistory()])
 }
@@ -97,17 +96,17 @@ async function saveMinimum() {
       <p class="text-lg font-semibold">Disponible para venta: {{ inventory.availableQuantity }}</p>
       <UBadge
         :color="
-          inventory.quantity === 0
+          inventory.availableQuantity === 0
             ? 'error'
-            : inventory.quantity <= inventory.minStock
+            : inventory.availableQuantity <= inventory.minStock
               ? 'warning'
               : 'success'
         "
       >
         {{
-          inventory.quantity === 0
+          inventory.availableQuantity === 0
             ? 'Agotado'
-            : inventory.quantity <= inventory.minStock
+            : inventory.availableQuantity <= inventory.minStock
               ? 'Stock bajo'
               : 'Disponible'
         }}
@@ -160,7 +159,7 @@ async function saveMinimum() {
         >
       </form>
       <form class="flex items-end gap-3 border-t border-default pt-4" @submit.prevent="saveMinimum">
-        <UFormField label="Stock mínimo" help="Se avisa cuando la cantidad llega a este valor.">
+        <UFormField label="Stock mínimo" help="Se avisa cuando la cantidad disponible llega a este valor.">
           <UInput v-model="minStock" inputmode="numeric" :disabled="saving" />
         </UFormField>
         <UButton
@@ -193,43 +192,18 @@ async function saveMinimum() {
           </p>
           <p>{{ movement.previousQuantity }} → {{ movement.resultingQuantity }} unidades</p>
           <p class="whitespace-pre-wrap break-words">{{ movement.reason }}</p>
+          <UButton v-if="movement.purchaseItem && auth.isAdmin.value" :to="`/purchases/${movement.purchaseItem.purchaseId}`" icon="i-lucide-package-plus" color="neutral" variant="link" size="xs">Ver compra</UButton>
           <UButton v-if="movement.saleItem || movement.operationItem" :to="`/sales/${movement.saleItem?.saleId ?? movement.operationItem?.operation.saleId}`" icon="i-lucide-receipt" color="neutral" variant="link" size="xs">Ver venta</UButton>
           <p class="text-muted">
             {{ movement.user.name }} ·
             {{
-              new Date(movement.createdAt).toLocaleString('es-BO', {
-                timeZone: 'America/La_Paz',
-              })
+              formatStoreDate(movement.createdAt)
             }}
           </p>
         </li>
       </ul>
       <p v-else class="text-sm text-muted">Todavía no hay movimientos registrados.</p>
-      <div class="flex items-center justify-between gap-2">
-        <UButton
-          color="neutral"
-          variant="outline"
-          :disabled="page <= 1 || historyPending || saving"
-          @click="
-            () => {
-              page--
-            }
-          "
-          >Anterior</UButton
-        >
-        <span class="text-sm">{{ page }} / {{ totalPages }}</span>
-        <UButton
-          color="neutral"
-          variant="outline"
-          :disabled="page >= totalPages || historyPending || saving"
-          @click="
-            () => {
-              page++
-            }
-          "
-          >Siguiente</UButton
-        >
-      </div>
+      <ListPagination v-if="history && !historyError" v-model="page" :total="history.total" :limit="10" :pending="historyPending || saving" label="movimientos" />
     </section>
   </div>
 </template>

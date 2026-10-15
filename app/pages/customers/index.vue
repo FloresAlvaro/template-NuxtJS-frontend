@@ -107,32 +107,7 @@ async function saved() {
       >
     </GenericTable>
     <p v-else>No hay clientes que coincidan con los filtros.</p>
-    <div class="flex items-center justify-between gap-3">
-      <span class="text-sm">{{ data?.total ?? 0 }} clientes · {{ page }} / {{ totalPages }}</span>
-      <div class="flex gap-2">
-        <UButton
-          color="neutral"
-          variant="outline"
-          :disabled="page <= 1 || pending"
-          @click="
-            () => {
-              page--
-            }
-          "
-          >Anterior</UButton
-        ><UButton
-          color="neutral"
-          variant="outline"
-          :disabled="page >= totalPages || pending"
-          @click="
-            () => {
-              page++
-            }
-          "
-          >Siguiente</UButton
-        >
-      </div>
-    </div>
+    <ListPagination v-if="data && !error" v-model="page" :total="data.total" :limit="20" :pending="pending" label="clientes" />
     <UModal
       v-model:open="open"
       :title="selected ? 'Editar cliente' : 'Nuevo cliente'"

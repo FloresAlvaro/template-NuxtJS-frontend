@@ -3,12 +3,15 @@ import type { AuthUser } from '~/types/auth'
 export const useAuth = () => {
   const api = useApi()
   const user = useState<AuthUser | null>('auth-user', () => null)
+  const unavailable = useState('auth-unavailable', () => false)
   const refresh = async () => {
     try {
       user.value = await api<AuthUser>('/auth/me')
+      unavailable.value = false
     } catch (error: unknown) {
-      if (apiErrorStatus(error) === 401) user.value = null
-      else throw error
+      user.value = null
+      unavailable.value = apiErrorStatus(error) !== 401
+      if (unavailable.value) throw error
     }
   }
   const logout = async () => {
@@ -23,6 +26,7 @@ export const useAuth = () => {
   }
   return {
     user,
+    unavailable,
     refresh,
     logout,
     isAdmin: computed(() => user.value?.role === 'ADMIN'),
