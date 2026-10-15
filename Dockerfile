@@ -1,7 +1,7 @@
 FROM node:24-bookworm AS build
 WORKDIR /app
-RUN corepack enable && corepack prepare pnpm@10.32.1 --activate
-COPY package.json pnpm-lock.yaml ./
+RUN npm install --global pnpm@11.9.0
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN pnpm install --frozen-lockfile
 COPY . .
 RUN pnpm run build

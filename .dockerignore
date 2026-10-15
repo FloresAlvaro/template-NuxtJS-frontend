@@ -1,8 +1,12 @@
 node_modules
-.nuxt
 .output
+.nuxt
+.nitro
+.data
+.cache
 .git
 .env
 .env.*
+coverage
+tests
 *.log
-README.md

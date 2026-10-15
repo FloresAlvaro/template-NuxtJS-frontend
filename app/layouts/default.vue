@@ -27,7 +27,12 @@ const active = (path: string) => path === '/' ? route.path === '/' : route.path 
           </div>
         </div>
       </aside>
-      <main id="main-content" class="min-w-0 flex-1 px-4 py-6 sm:px-8 sm:py-8 lg:px-10" :class="{ 'max-w-7xl mx-auto w-full': !auth.isStaff.value }"><slot /></main>
+      <main id="main-content" class="min-w-0 flex-1 px-4 py-6 sm:px-8 sm:py-8 lg:px-10" :class="{ 'max-w-7xl mx-auto w-full': !auth.isStaff.value }">
+        <UAlert v-if="auth.unavailable.value" class="mb-5" color="warning" title="No pudimos conectar con la tienda" description="Algunas funciones no están disponibles. Puedes volver a intentar la conexión.">
+          <template #actions><UButton color="neutral" variant="outline" @click="reloadNuxtApp()">Reintentar</UButton></template>
+        </UAlert>
+        <slot />
+      </main>
     </div>
     <AppFooter />
   </div>

@@ -5,7 +5,6 @@ import type { PromotionApi } from '~/types/promotion'
 import { discountedUnitCents } from '~/utils/promotion'
 import type { SaleApi } from '~/types/sale'
 import { moneyCents, formatCents } from '~/utils/money'
-import { apiErrorStatus } from '~/utils/api-error'
 const api = useApi()
 const toast = useAppToast()
 const { getApiErrorMessage } = useApiErrorMessage()
@@ -65,7 +64,6 @@ function unitCents(line: CartLine) {
       )
     : moneyCents(line.product.salePrice)
 }
-const { pending: saving, error: saveError, run } = useAsyncAction()
 const {
   pending: reloading,
   error: reloadError,
@@ -79,13 +77,14 @@ type Payload = {
   expectedTotal?: string
   items: { productId: number; quantity: number; expectedUnitPrice: string }[]
 }
-const submitted = ref<Payload | null>(null)
+const { user } = useAuth()
+const request = useIdempotentRequest<Payload>(`sale-create-${user.value?.userId}`, /^\/sales$/)
+const { pending: saving, error: saveError, submission: submitted, locked: requestLocked } = request
 const recordedSaleId = ref<number | null>(null)
 const locked = computed(
   () =>
-    saving.value ||
+    requestLocked.value ||
     reloading.value ||
-    submitted.value !== null ||
     recordedSaleId.value !== null,
 )
 const validQuantity = (line: CartLine) =>
@@ -172,40 +171,29 @@ async function submit() {
   }
   if (saving.value || reloading.value || (!submitted.value && !valid.value))
     return
-  await run(async () => {
-    submitted.value ??= {
-      requestId: crypto.randomUUID(),
-      customerId: customer.value!.customerId,
-      ...(promotion.value
-        ? {
-            promotionId: promotion.value.promotionId,
-            expectedPromotionVersion: promotion.value.version,
-            expectedTotal: total.value,
-          }
-        : {}),
-      items: cart.value.map((line) => ({
-        productId: line.product.productId,
-        quantity: Number(line.quantity),
-        expectedUnitPrice: line.product.salePrice,
-      })),
-    }
-    let sale: SaleApi
-    try {
-      sale = await api<SaleApi>('/sales', {
-        method: 'POST',
-        body: submitted.value,
-      })
-    } catch (error) {
-      const status = apiErrorStatus(error)
-      if (status && status >= 400 && status < 500) submitted.value = null
-      throw error
-    }
-    submitted.value = null
+  if (!submitted.value && requestLocked.value) return
+  const sale = await request.send<SaleApi>('/sales', () => ({
+    requestId: crypto.randomUUID(),
+    customerId: customer.value!.customerId,
+    ...(promotion.value
+      ? {
+          promotionId: promotion.value.promotionId,
+          expectedPromotionVersion: promotion.value.version,
+          expectedTotal: total.value,
+        }
+      : {}),
+    items: cart.value.map((line) => ({
+      productId: line.product.productId,
+      quantity: Number(line.quantity),
+      expectedUnitPrice: line.product.salePrice,
+    })),
+  }))
+  if (sale) {
     recordedSaleId.value = sale.saleId
     toast.success(`Venta #${sale.saleId} registrada`)
     clearNuxtData()
     await navigateTo(`/sales/${sale.saleId}`)
-  }, 'No se pudo confirmar el envío. Reintenta la misma venta para evitar duplicados.')
+  }
 }
 onBeforeRouteLeave(
   () => recordedSaleId.value !== null || (!saving.value && !submitted.value),
@@ -576,7 +564,7 @@ onBeforeRouteLeave(
       </div>
       <div class="mt-4 flex justify-end">
         <UButton
-          :disabled="saving || reloading || (!submitted && !valid)"
+          :disabled="saving || reloading || (!submitted && (!valid || locked))"
           :loading="saving"
           size="lg"
           icon="i-lucide-check"

@@ -39,7 +39,7 @@ Para desplegar ambos repositorios con Docker y HTTPS, consulta la
 [guía completa de home lab](../template-NestJS-backend/docs/homelab-deployment.md).
 El `Dockerfile` de este repositorio compila Nuxt dentro de Linux y ejecuta la
 salida SSR como usuario `node`. El Compose, Caddy y procedimientos de recuperación
-están en `deploy/homelab` del backend; requieren ambos checkouts como hermanos.
+están en `deploy/homelab-caddy` del backend; requieren ambos checkouts como hermanos.
 
 ```bash
 pnpm typecheck
@@ -102,6 +102,29 @@ Las peticiones usan `/api` en el mismo origen. `server/api/[...path].ts` reenví
 Crea el primer administrador con el comando interactivo documentado en el README del backend. Para publicar, configura el origen HTTPS en TRUSTED_ORIGINS del backend y COOKIE_SECURE=true. El registro público crea únicamente cuentas de cliente. La recuperación de contraseña y los pedidos de retiro están integrados; las imágenes de productos se muestran en el catálogo y se gestionan desde Productos.
 
 Validaciones: `pnpm typecheck` y `pnpm build`.
+
+Regresiones: `node --test tests/*.test.mjs`. Cubren recuperación de ventas tras
+respuesta perdida/recarga, aislamiento por usuario, paginación inicial, errores
+de sesión y firma privada del proxy, además de promociones.
+
+Las ventas pendientes guardan su UUID y payload en sessionStorage por usuario;
+tras recargar se reenvía exactamente la misma operación. Si el navegador bloquea
+ese almacenamiento, los reintentos solo se conservan mientras la página siga
+abierta. Los errores de sesión, permisos, timeout o límite de solicitudes no
+borran un envío pendiente: un rechazo del reintento no demuestra que el primer
+intento no se guardó. Un rechazo de promoción con código `PROMOTION_NOT_ALLOWED`
+permite corregirla. Los cobros/reembolsos también guardan su envío por usuario.
+Antes de actualizar desde una versión que guardaba operaciones solo por venta,
+confirma cualquier operación pendiente con esa versión; las claves antiguas sin
+usuario no se atribuyen automáticamente a otra cuenta.
+Las páginas públicas muestran un aviso cuando falla la sesión; las
+privadas responden 503 sin conservar permisos de una sesión no comprobada.
+
+Para separar los clientes del proxy en el límite de acceso, configura
+`NUXT_AUTH_PROXY_SECRET` y `AUTH_PROXY_SECRET` en Nest con el mismo secreto
+aleatorio privado de al menos 32 caracteres. Nuxt firma la IP de su conexión
+entrante y descarta afirmaciones recibidas del navegador; no confía en
+X-Forwarded-For. Ver [frontera de confianza](../template-NestJS-backend/docs/auth-throttle.md).
 
 ## Inventario
 
@@ -318,3 +341,33 @@ restablecieron contraseñas reales durante la revisión.
 /audit (ADMIN) filtra por entidad/registro/responsable y muestra cambios anteriores/nuevos. /notifications muestra avisos propios CUSTOMER y entrega/reintentos de correo ADMIN. La campana CUSTOMER indica avisos sin leer. /promotions administra configuración ADMIN y consulta promociones elegibles SELLER. Nueva venta permite una promoción porcentual; detalle muestra el descuento histórico. Fechas en America/La_Paz y vista previa con BigInt/redondeo por unidad.
 
 Pruebas de lógica: Node 24, `node --test tests/promotion.test.mjs`. Ver [contrato y alcance](../template-NestJS-backend/docs/admin-features-api.md). No se aplican promociones a pedidos de autoservicio en esta versión.
+
+## CI y actualización coordinada
+
+`.github/workflows/ci.yml` publica `Frontend checks` para cada PR a master y cada
+cambio integrado: instalación con pnpm 11.9.0/lockfile, pruebas, tipos, build y
+comprobación HTTP de SSR público durante una caída de API. No requiere backend ni
+secretos reales y no despliega automáticamente. La suite completa de navegador
+sigue pendiente.
+
+Para ejecutar la salida compilada local con sus variables privadas en Node 24:
+
+```bash
+node --env-file=.env .output/server/index.mjs
+```
+
+El secreto de .env debe coincidir con AUTH_PROXY_SECRET del backend. Antes de
+actualizar una instancia con datos, confirmar los envíos antiguos pendientes,
+comprobar un backup restaurable y actualizar primero backend/migraciones. Ver
+[procedimiento coordinado](../template-NestJS-backend/docs/deployment.md).
+# Docker y homelab
+
+El `Dockerfile` compila Nuxt SSR con Node 24 y pnpm 11.9.0 y ejecuta únicamente
+`.output` como usuario sin privilegios. `.env` y archivos locales se excluyen del build.
+Configura en runtime `NUXT_BACKEND_API_BASE` y `NUXT_AUTH_PROXY_SECRET` (privados).
+`NUXT_TRUSTED_PROXY_IP` permanece vacío para conexiones directas; en homelab acepta
+`X-Real-IP` solo desde la IP exacta del Nginx que sobrescribe esa cabecera.
+
+La pila coordinada vive en `template-NestJS-backend/deploy/homelab/`, con ambas
+carpetas de repositorio como hermanas. Consulta su README para HTTPS, Ubuntu,
+backups y timers. Todas las peticiones, incluido `/api`, pasan por Nuxt.

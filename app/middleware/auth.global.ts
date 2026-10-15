@@ -1,6 +1,5 @@
 export default defineNuxtRouteMiddleware(async (to) => {
   const auth = useAuth()
-  await auth.refresh()
   const staff = [
     '/categories',
     '/sub-categories',
@@ -19,6 +18,17 @@ export default defineNuxtRouteMiddleware(async (to) => {
     admin || to.path === '/account' ||
     to.path === '/orders' ||
     to.path.startsWith('/orders/') || to.path === '/notifications'
+  try {
+    await auth.refresh()
+  } catch {
+    if (protectedPage) {
+      throw createError({
+        statusCode: 503,
+        statusMessage: 'Servicio temporalmente no disponible. Intenta nuevamente.',
+      })
+    }
+    return
+  }
   if (protectedPage && !auth.user.value)
     return navigateTo({ path: '/login', query: { redirect: to.fullPath } })
   if(to.path === '/notifications' && auth.user.value?.role === 'SELLER') return navigateTo('/')
