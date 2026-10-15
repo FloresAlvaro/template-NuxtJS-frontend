@@ -97,6 +97,22 @@ Crea el primer administrador con el comando interactivo documentado en el README
 
 Validaciones: `pnpm typecheck` y `pnpm build`.
 
+Regresiones: `node --test tests/*.test.mjs`. Cubren recuperación de ventas tras
+respuesta perdida/recarga, aislamiento por usuario, paginación inicial, errores
+de sesión y firma privada del proxy, además de promociones.
+
+Las ventas pendientes guardan su UUID y payload en sessionStorage por usuario;
+tras recargar se reenvía exactamente la misma operación. Si el navegador bloquea
+ese almacenamiento, los reintentos solo se conservan mientras la página siga
+abierta. Las páginas públicas muestran un aviso cuando falla la sesión; las
+privadas responden 503 sin conservar permisos de una sesión no comprobada.
+
+Para separar los clientes del proxy en el límite de acceso, configura
+`NUXT_AUTH_PROXY_SECRET` y `AUTH_PROXY_SECRET` en Nest con el mismo secreto
+aleatorio privado de al menos 32 caracteres. Nuxt firma la IP de su conexión
+entrante y descarta afirmaciones recibidas del navegador; no confía en
+X-Forwarded-For. Ver [frontera de confianza](../template-NestJS-backend/docs/auth-throttle.md).
+
 ## Inventario
 
 La tabla de Productos muestra stock disponible y avisos de agotado o stock bajo.

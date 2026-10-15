@@ -12,7 +12,7 @@ const props = withDefaults(
 const pages = computed(() => Math.max(1, Math.ceil(props.total / props.limit)))
 watch([pages, () => props.pending], ([value, pending]) => {
   if (!pending && page.value > value) page.value = value
-})
+}, { immediate: true })
 </script>
 <template>
   <div class="flex flex-col items-center gap-3 py-2">

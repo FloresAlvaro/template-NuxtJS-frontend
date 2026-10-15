@@ -23,6 +23,7 @@ export default defineNuxtConfig({
     },
   },
   runtimeConfig: {
+    authProxySecret: '',
     backendApiBase: 'http://localhost:3001/api',
     public: {
       apiBase: '/api',
