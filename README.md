@@ -330,3 +330,22 @@ restablecieron contraseñas reales durante la revisión.
 /audit (ADMIN) filtra por entidad/registro/responsable y muestra cambios anteriores/nuevos. /notifications muestra avisos propios CUSTOMER y entrega/reintentos de correo ADMIN. La campana CUSTOMER indica avisos sin leer. /promotions administra configuración ADMIN y consulta promociones elegibles SELLER. Nueva venta permite una promoción porcentual; detalle muestra el descuento histórico. Fechas en America/La_Paz y vista previa con BigInt/redondeo por unidad.
 
 Pruebas de lógica: Node 24, `node --test tests/promotion.test.mjs`. Ver [contrato y alcance](../template-NestJS-backend/docs/admin-features-api.md). No se aplican promociones a pedidos de autoservicio en esta versión.
+
+## CI y actualización coordinada
+
+`.github/workflows/ci.yml` publica `Frontend checks` para cada PR a master y cada
+cambio integrado: instalación con pnpm 11.9.0/lockfile, pruebas, tipos, build y
+comprobación HTTP de SSR público durante una caída de API. No requiere backend ni
+secretos reales y no despliega automáticamente. La suite completa de navegador
+sigue pendiente.
+
+Para ejecutar la salida compilada local con sus variables privadas en Node 24:
+
+```bash
+node --env-file=.env .output/server/index.mjs
+```
+
+El secreto de .env debe coincidir con AUTH_PROXY_SECRET del backend. Antes de
+actualizar una instancia con datos, confirmar los envíos antiguos pendientes,
+comprobar un backup restaurable y actualizar primero backend/migraciones. Ver
+[procedimiento coordinado](../template-NestJS-backend/docs/deployment.md).

@@ -1,0 +1,52 @@
+name: Frontend CI
+
+on:
+  pull_request:
+    branches: [master]
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: frontend-ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: Frontend checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '24'
+      - name: Install the pinned package manager
+        run: npm install --global pnpm@11.9.0
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test
+      - run: pnpm run typecheck
+      - run: pnpm run build
+      - name: Verify public SSR during an API outage
+        env:
+          PORT: '4317'
+          HOST: 127.0.0.1
+          NUXT_BACKEND_API_BASE: http://127.0.0.1:1/api
+        run: |
+          node .output/server/index.mjs > /tmp/frontend-ci.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 20); do
+            if curl --silent http://127.0.0.1:4317/login --output /tmp/frontend-login.html; then
+              node scripts/check-public-ssr.mjs
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/frontend-ci.log
+          exit 1
