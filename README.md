@@ -349,3 +349,14 @@ El secreto de .env debe coincidir con AUTH_PROXY_SECRET del backend. Antes de
 actualizar una instancia con datos, confirmar los envíos antiguos pendientes,
 comprobar un backup restaurable y actualizar primero backend/migraciones. Ver
 [procedimiento coordinado](../template-NestJS-backend/docs/deployment.md).
+# Docker y homelab
+
+El `Dockerfile` compila Nuxt SSR con Node 24 y pnpm 11.9.0 y ejecuta únicamente
+`.output` como usuario sin privilegios. `.env` y archivos locales se excluyen del build.
+Configura en runtime `NUXT_BACKEND_API_BASE` y `NUXT_AUTH_PROXY_SECRET` (privados).
+`NUXT_TRUSTED_PROXY_IP` permanece vacío para conexiones directas; en homelab acepta
+`X-Real-IP` solo desde la IP exacta del Nginx que sobrescribe esa cabecera.
+
+La pila coordinada vive en `template-NestJS-backend/deploy/homelab/`, con ambas
+carpetas de repositorio como hermanas. Consulta su README para HTTPS, Ubuntu,
+backups y timers. Todas las peticiones, incluido `/api`, pasan por Nuxt.

@@ -1,4 +1,4 @@
-import { clientIdentityHeaders, signedClientHeaders } from '../utils/proxy-client'
+import { clientIdentityHeaders, proxyClientAddress, signedClientHeaders } from '../utils/proxy-client'
 
 export default defineEventHandler(async event => {
   const config = useRuntimeConfig(event)
@@ -8,7 +8,10 @@ export default defineEventHandler(async event => {
   const authWrite = event.method === 'POST' &&
     /^\/auth\/(login|register|forgot-password|reset-password)\/?$/i.test(path.split('?')[0] ?? '')
   const headers = authWrite ? signedClientHeaders(
-    getRequestIP(event, { xForwardedFor: false }), config.authProxySecret,
+    proxyClientAddress(
+      getRequestIP(event, { xForwardedFor: false }),
+      getHeader(event, 'x-real-ip'), config.trustedProxyIp,
+    ), config.authProxySecret,
   ) : {}
   return proxyRequest(event, `${config.backendApiBase}${path}`, { headers })
 })

@@ -18,7 +18,7 @@ jobs:
   checks:
     name: Frontend checks
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
@@ -50,3 +50,22 @@ jobs:
           done
           cat /tmp/frontend-ci.log
           exit 1
+      - name: Build and verify the read-only non-root Docker runtime
+        run: |
+          docker build --tag tienda-frontend-ci .
+          docker run --detach --name tienda-frontend-ci --read-only --cap-drop ALL \
+            --security-opt no-new-privileges --tmpfs /tmp:rw,size=128m,mode=1777 \
+            --publish 127.0.0.1:4318:3000 \
+            --env NUXT_BACKEND_API_BASE=http://127.0.0.1:1/api tienda-frontend-ci
+          for attempt in $(seq 1 30); do
+            if curl --silent http://127.0.0.1:4318/login --output /dev/null; then
+              SSR_BASE_URL=http://127.0.0.1:4318 node scripts/check-public-ssr.mjs
+              exit 0
+            fi
+            sleep 1
+          done
+          docker logs tienda-frontend-ci
+          exit 1
+      - name: Clean up the Docker runtime
+        if: always()
+        run: docker rm --force tienda-frontend-ci 2>/dev/null || true
