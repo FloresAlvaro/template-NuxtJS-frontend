@@ -180,3 +180,9 @@ pnpm run build
 - Los nuevos cobros/reembolsos desde ventas requieren turno propio abierto y cashShiftId explícito. Conserva el payload guardado al reintentar aunque el turno haya cerrado.
 - En caja, separa efectivo de tarjeta/transferencia; usa el resumen del servidor para arqueo. Envía expectedLastMovementId al cerrar y exige actualizar ante conflicto. El cierre es definitivo.
 - Alertas operativas usan /inventory/alerts y stock disponible después de reservas, con resumen global y paginación filtrada. Mantén la limpieza de timers/listeners de useLiveRefresh.
+
+## Auditoría, avisos y promociones
+
+- Auditoría es ADMIN y no editable. Representar snapshots como texto, sin HTML; comparar campos y conservar precisión de importes serializados.
+- Avisos CUSTOMER son propios. ReadAt no equivale a entrega SMTP; ADMIN consulta entrega/reintenta y no marca avisos de otros como leídos. Limpiar timers de la campana/lista.
+- Promociones aplican solo a ventas de mostrador. Usar discountedUnitCents con BigInt y redondeo HALF_UP por unidad. Enviar ID, versión y total esperado juntos, preservando payload para reintentos. Usar helpers de fechas de tienda y mostrar descuentos históricos sin recalcular.

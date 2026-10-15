@@ -11,6 +11,8 @@ const columns: TableColumn<SaleItemApi>[] = [
   { accessorKey: 'productName', header: 'Producto' },
   { accessorKey: 'quantity', header: 'Cantidad vendida' },
   { accessorKey: 'returnedQuantity', header: 'Cantidad repuesta' },
+  {accessorKey:'listUnitPrice',header:'Precio de lista'},
+  {accessorKey:'unitDiscount',header:'Descuento / unidad'},
   { accessorKey: 'unitPrice', header: 'Precio aplicado' },
   { accessorKey: 'subtotal', header: 'Subtotal' },
 ]
@@ -54,6 +56,7 @@ const columns: TableColumn<SaleItemApi>[] = [
         </dl>
       </UCard>
       <section class="space-y-3"><div><h2 class="text-lg font-bold">Productos vendidos</h2><p class="mt-1 text-sm text-muted">Precios originales y cantidades repuestas por devolución o anulación.</p></div><GenericTable :data="data.items" :columns="columns" /></section>
+      <UAlert v-if="data.promotionSnapshot" color="neutral" variant="subtle" icon="i-lucide-tag" :title="'Promoción aplicada: '+data.promotionSnapshot.code" :description="data.promotionSnapshot.name+' · Versión '+data.promotionSnapshot.version+' · Subtotal: '+data.grossTotal+' · Descuento: '+data.discountTotal+'. Las devoluciones utilizan el precio final aplicado.'" />
       <SaleOperations :sale="data" @updated="data = $event" />
       <UButton color="neutral" variant="outline" to="/sales"
         >Volver a ventas</UButton

@@ -1,4 +1,6 @@
 export interface SaleItemApi {
+  listUnitPrice:string
+  unitDiscount:string
   returnedQuantity: number
   saleItemId: number
   productId: number
@@ -9,6 +11,9 @@ export interface SaleItemApi {
   subtotal: string
 }
 export interface SaleApi {
+  grossTotal:string
+  discountTotal:string
+  promotionSnapshot:{promotionId:number;code:string;name:string;percentBps:number;version:number}|null
   status: 'ACTIVE' | 'PARTIALLY_RETURNED' | 'RETURNED' | 'CANCELLED'
   paid: string
   refunded: string

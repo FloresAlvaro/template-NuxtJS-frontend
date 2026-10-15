@@ -31,6 +31,7 @@ async function logout() {
       </div>
     </template>
     <template #right>
+      <NotificationBell v-if="auth.user.value?.role==='CUSTOMER'" />
       <NuxtLink v-if="auth.user.value" to="/account" class="hidden sm:flex items-center gap-2 rounded-full px-3 py-1.5 hover:bg-elevated">
         <span class="flex size-8 items-center justify-center rounded-full bg-primary/10 text-primary font-bold">{{ auth.user.value.name.slice(0, 1).toUpperCase() }}</span>
         <span class="max-w-32"><span class="block truncate text-sm font-semibold">{{ auth.user.value.name }}</span><span class="block text-xs text-muted">{{ ROLE_LABELS[auth.user.value.role] }}</span></span>

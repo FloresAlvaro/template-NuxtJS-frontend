@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import type { CustomerApi, CustomerPage } from '~/types/customer'
 import type { ProductApi, ProductPage } from '~/types/product'
+import type { PromotionApi } from '~/types/promotion'
+import { discountedUnitCents } from '~/utils/promotion'
 import type { SaleApi } from '~/types/sale'
 import { moneyCents, formatCents } from '~/utils/money'
 import { apiErrorStatus } from '~/utils/api-error'
@@ -54,6 +56,15 @@ const {
 const customer = ref<CustomerApi | null>(null)
 type CartLine = { product: ProductApi; quantity: string }
 const cart = ref<CartLine[]>([])
+const promotion = ref<PromotionApi | null>(null)
+function unitCents(line: CartLine) {
+  return promotion.value
+    ? discountedUnitCents(
+        moneyCents(line.product.salePrice),
+        promotion.value.percentBps,
+      )
+    : moneyCents(line.product.salePrice)
+}
 const { pending: saving, error: saveError, run } = useAsyncAction()
 const {
   pending: reloading,
@@ -63,6 +74,9 @@ const {
 type Payload = {
   requestId: string
   customerId: number
+  promotionId?: number
+  expectedPromotionVersion?: number
+  expectedTotal?: string
   items: { productId: number; quantity: number; expectedUnitPrice: string }[]
 }
 const submitted = ref<Payload | null>(null)
@@ -80,7 +94,7 @@ const validQuantity = (line: CartLine) =>
   Number(line.quantity) > 0 &&
   Number(line.quantity) <= line.product.availableQuantity &&
   line.product.isActive
-const totalCents = computed(() =>
+const grossCents = computed(() =>
   cart.value.reduce(
     (sum, line) =>
       sum +
@@ -90,13 +104,24 @@ const totalCents = computed(() =>
     0n,
   ),
 )
+const totalCents = computed(() =>
+  cart.value.reduce(
+    (sum, line) =>
+      sum +
+      (validQuantity(line) ? unitCents(line) * BigInt(line.quantity) : 0n),
+    0n,
+  ),
+)
+const discountCents = computed(() => grossCents.value - totalCents.value)
 const valid = computed(
   () =>
     customer.value?.isActive &&
     cart.value.length > 0 &&
     cart.value.length <= 100 &&
     cart.value.every(validQuantity) &&
-    totalCents.value <= 999999999999999999n,
+    grossCents.value <= 999999999999999999n &&
+    (!promotion.value ||
+      grossCents.value >= moneyCents(promotion.value.minSubtotal)),
 )
 const total = computed(() => formatCents(totalCents.value))
 function add(product: ProductApi) {
@@ -133,6 +158,10 @@ async function reload() {
       customer.value = await api<CustomerApi>(
         `/customers/${customer.value.customerId}`,
       )
+    if (promotion.value)
+      promotion.value = await api<PromotionApi>(
+        '/promotions/' + promotion.value.promotionId,
+      )
     await Promise.all([refreshCustomers(), refreshProducts()])
   }, 'No se pudieron actualizar los precios y existencias')
 }
@@ -147,6 +176,13 @@ async function submit() {
     submitted.value ??= {
       requestId: crypto.randomUUID(),
       customerId: customer.value!.customerId,
+      ...(promotion.value
+        ? {
+            promotionId: promotion.value.promotionId,
+            expectedPromotionVersion: promotion.value.version,
+            expectedTotal: total.value,
+          }
+        : {}),
       items: cart.value.map((line) => ({
         productId: line.product.productId,
         quantity: Number(line.quantity),
@@ -184,11 +220,44 @@ onBeforeRouteLeave(
         { label: 'Nueva venta' },
       ]"
     />
-    <WorkspaceHeader eyebrow="Punto de venta" title="Nueva venta" icon="i-lucide-shopping-cart" description="Selecciona el cliente, agrega productos y revisa el total antes de registrar.">
-      <template #actions><UButton to="/sales" color="neutral" variant="outline" icon="i-lucide-arrow-left" :disabled="locked" :ui="{ base: 'bg-transparent text-white ring-white/30 hover:bg-white/10' }">Volver a ventas</UButton></template>
+    <WorkspaceHeader
+      eyebrow="Punto de venta"
+      title="Nueva venta"
+      icon="i-lucide-shopping-cart"
+      description="Selecciona el cliente, agrega productos y revisa el total antes de registrar."
+    >
+      <template #actions
+        ><UButton
+          to="/sales"
+          color="neutral"
+          variant="outline"
+          icon="i-lucide-arrow-left"
+          :disabled="locked"
+          :ui="{
+            base: 'bg-transparent text-white ring-white/30 hover:bg-white/10',
+          }"
+          >Volver a ventas</UButton
+        ></template
+      >
     </WorkspaceHeader>
-    <ol class="grid gap-3 sm:grid-cols-3" aria-label="Pasos para registrar una venta">
-      <li v-for="(step, index) in ['Selecciona el cliente', 'Agrega productos', 'Revisa y confirma']" :key="step" class="flex items-center gap-3 rounded-2xl border border-default bg-default p-4"><span class="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">{{ index + 1 }}</span><span class="text-sm font-medium">{{ step }}</span></li>
+    <ol
+      class="grid gap-3 sm:grid-cols-3"
+      aria-label="Pasos para registrar una venta"
+    >
+      <li
+        v-for="(step, index) in [
+          'Selecciona el cliente',
+          'Agrega productos',
+          'Revisa y confirma',
+        ]"
+        :key="step"
+        class="flex items-center gap-3 rounded-2xl border border-default bg-default p-4"
+      >
+        <span
+          class="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary"
+          >{{ index + 1 }}</span
+        ><span class="text-sm font-medium">{{ step }}</span>
+      </li>
     </ol>
     <UAlert
       color="neutral"
@@ -209,7 +278,12 @@ onBeforeRouteLeave(
       <UCard
         ><template #header
           ><div class="flex flex-wrap justify-between items-center gap-3">
-            <h2 class="flex items-center gap-2 font-semibold"><UIcon name="i-lucide-user-round" class="size-5 text-primary" />Cliente</h2>
+            <h2 class="flex items-center gap-2 font-semibold">
+              <UIcon
+                name="i-lucide-user-round"
+                class="size-5 text-primary"
+              />Cliente
+            </h2>
             <UButton
               icon="i-lucide-user-plus"
               color="neutral"
@@ -225,7 +299,10 @@ onBeforeRouteLeave(
           </div></template
         >
         <div class="space-y-3">
-          <p v-if="customer" class="rounded-xl border border-primary/20 bg-primary/5 p-4 text-sm font-medium">
+          <p
+            v-if="customer"
+            class="rounded-xl border border-primary/20 bg-primary/5 p-4 text-sm font-medium"
+          >
             Seleccionado: {{ customer.name }} ·
             {{ customer.document || 'Sin documento' }}
           </p>
@@ -256,7 +333,11 @@ onBeforeRouteLeave(
                 :variant="
                   customer?.customerId === item.customerId ? 'soft' : 'ghost'
                 "
-                :color="customer?.customerId === item.customerId ? 'primary' : 'neutral'"
+                :color="
+                  customer?.customerId === item.customerId
+                    ? 'primary'
+                    : 'neutral'
+                "
                 :aria-pressed="customer?.customerId === item.customerId"
                 :disabled="locked"
                 @click="
@@ -277,12 +358,24 @@ onBeforeRouteLeave(
           >
             No hay clientes activos. Puedes crear uno sin cuenta.
           </p>
-          <ListPagination v-if="customers && !customersError" v-model="customerPage" :total="customers.total" :limit="10" :pending="customersPending || locked" label="clientes" />
+          <ListPagination
+            v-if="customers && !customersError"
+            v-model="customerPage"
+            :total="customers.total"
+            :limit="10"
+            :pending="customersPending || locked"
+            label="clientes"
+          />
         </div>
       </UCard>
       <UCard
         ><template #header
-          ><h2 class="flex items-center gap-2 font-semibold"><UIcon name="i-lucide-package-plus" class="size-5 text-primary" />Agregar productos</h2></template
+          ><h2 class="flex items-center gap-2 font-semibold">
+            <UIcon
+              name="i-lucide-package-plus"
+              class="size-5 text-primary"
+            />Agregar productos
+          </h2></template
         >
         <div class="space-y-3">
           <UInput
@@ -312,11 +405,30 @@ onBeforeRouteLeave(
                 color="neutral"
                 variant="outline"
                 :disabled="
-                  locked || product.availableQuantity === 0 || (cart.length >= 100 && !cart.some(line => line.product.productId === product.productId))
+                  locked ||
+                  product.availableQuantity === 0 ||
+                  (cart.length >= 100 &&
+                    !cart.some(
+                      (line) => line.product.productId === product.productId,
+                    ))
                 "
                 @click="add(product)"
-                ><span class="flex w-full min-w-0 items-center justify-between gap-3 text-left"><span class="min-w-0"><span class="block truncate font-semibold">{{ product.name }}</span><span class="block text-xs text-muted">{{ product.sku }} · Disponible: {{ product.availableQuantity }}</span></span><span class="shrink-0 font-bold text-primary">{{ product.salePrice }}<UIcon name="i-lucide-plus-circle" class="ml-2 size-4 align-middle" /></span></span></UButton
-              >
+                ><span
+                  class="flex w-full min-w-0 items-center justify-between gap-3 text-left"
+                  ><span class="min-w-0"
+                    ><span class="block truncate font-semibold">{{
+                      product.name
+                    }}</span
+                    ><span class="block text-xs text-muted"
+                      >{{ product.sku }} · Disponible:
+                      {{ product.availableQuantity }}</span
+                    ></span
+                  ><span class="shrink-0 font-bold text-primary"
+                    >{{ product.salePrice
+                    }}<UIcon
+                      name="i-lucide-plus-circle"
+                      class="ml-2 size-4 align-middle" /></span></span
+              ></UButton>
             </li>
           </ul>
           <p
@@ -325,10 +437,23 @@ onBeforeRouteLeave(
           >
             No hay productos que coincidan.
           </p>
-          <ListPagination v-if="products && !productsError" v-model="productPage" :total="products.total" :limit="10" :pending="productsPending || locked" label="productos" />
+          <ListPagination
+            v-if="products && !productsError"
+            v-model="productPage"
+            :total="products.total"
+            :limit="10"
+            :pending="productsPending || locked"
+            label="productos"
+          />
         </div>
       </UCard>
     </div>
+    <PromotionPicker v-model="promotion" :disabled="locked" />
+    <UAlert
+      v-if="promotion && grossCents < moneyCents(promotion.minSubtotal)"
+      color="warning"
+      :title="'La promoción requiere un mínimo de ' + promotion.minSubtotal"
+    />
     <UCard
       ><template #header
         ><div class="flex flex-wrap items-center justify-between gap-3">
@@ -364,13 +489,21 @@ onBeforeRouteLeave(
               <td class="p-3">
                 {{ line.product.name }}
                 <p class="text-muted">
-                  {{ line.product.sku }} · Disponible: {{ line.product.availableQuantity }}
+                  {{ line.product.sku }} · Disponible:
+                  {{ line.product.availableQuantity }}
                 </p>
                 <p v-if="!validQuantity(line)" class="text-error">
                   Revisa la cantidad o el estado del producto.
                 </p>
               </td>
-              <td class="p-3 text-center">{{ line.product.salePrice }}</td>
+              <td class="p-3 text-center">
+                <span :class="{ 'line-through text-muted': promotion }">{{
+                  line.product.salePrice
+                }}</span
+                ><span v-if="promotion" class="block font-semibold">{{
+                  formatCents(unitCents(line))
+                }}</span>
+              </td>
               <td class="p-3">
                 <UInput
                   v-model="line.quantity"
@@ -383,10 +516,7 @@ onBeforeRouteLeave(
               <td class="p-3 text-center">
                 {{
                   validQuantity(line)
-                    ? formatCents(
-                        moneyCents(line.product.salePrice) *
-                          BigInt(line.quantity),
-                      )
+                    ? formatCents(unitCents(line) * BigInt(line.quantity))
                     : '—'
                 }}
               </td>
@@ -408,8 +538,42 @@ onBeforeRouteLeave(
           </tbody>
         </table>
       </div>
-      <div v-else class="rounded-xl border border-dashed border-default p-8 text-center"><UIcon name="i-lucide-shopping-cart" class="size-9 text-muted" /><p class="mt-3 font-medium">Tu venta comienza aquí</p><p class="mt-1 text-sm text-muted">Agrega productos desde el listado para revisar cantidades y precios.</p></div>
-      <div class="mt-5 flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-primary/5 p-5"><div><p class="text-sm font-medium">{{ customer?.name || 'Selecciona un cliente' }}</p><p class="mt-1 text-xs text-muted">{{ cart.length }} {{ cart.length === 1 ? 'producto distinto' : 'productos distintos' }} · Cobro posterior al registro</p></div><div class="min-w-0 text-right"><p class="section-eyebrow text-primary">Total de la venta</p><p class="mt-2 break-all text-3xl font-extrabold tabular-nums">{{ total }}</p></div></div>
+      <div
+        v-else
+        class="rounded-xl border border-dashed border-default p-8 text-center"
+      >
+        <UIcon name="i-lucide-shopping-cart" class="size-9 text-muted" />
+        <p class="mt-3 font-medium">Tu venta comienza aquí</p>
+        <p class="mt-1 text-sm text-muted">
+          Agrega productos desde el listado para revisar cantidades y precios.
+        </p>
+      </div>
+      <div v-if="promotion" class="mt-4 space-y-1 text-sm">
+        <p>Subtotal sin descuento: {{ formatCents(grossCents) }}</p>
+        <p>Promoción {{ promotion.code }}: −{{ formatCents(discountCents) }}</p>
+      </div>
+      <div
+        class="mt-5 flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-primary/5 p-5"
+      >
+        <div>
+          <p class="text-sm font-medium">
+            {{ customer?.name || 'Selecciona un cliente' }}
+          </p>
+          <p class="mt-1 text-xs text-muted">
+            {{ cart.length }}
+            {{
+              cart.length === 1 ? 'producto distinto' : 'productos distintos'
+            }}
+            · Cobro posterior al registro
+          </p>
+        </div>
+        <div class="min-w-0 text-right">
+          <p class="section-eyebrow text-primary">Total de la venta</p>
+          <p class="mt-2 break-all text-3xl font-extrabold tabular-nums">
+            {{ total }}
+          </p>
+        </div>
+      </div>
       <div class="mt-4 flex justify-end">
         <UButton
           :disabled="saving || reloading || (!submitted && !valid)"

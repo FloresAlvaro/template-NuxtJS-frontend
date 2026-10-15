@@ -301,3 +301,9 @@ restablecieron contraseñas reales durante la revisión.
 /cash permite abrir el turno propio, gestionar efectivo, consultar el historial y cerrar con arqueo. ADMIN administra cajas y consulta todos los turnos; SELLER solo los propios. El efectivo esperado excluye tarjeta y transferencia. Cobros y reembolsos desde ventas exigen turno abierto y envían su identificador. Reintentos conservan UUID y contenido tras recargar.
 
 /stock-alerts ofrece búsqueda SKU/nombre, filtros de agotados/stock bajo, existencias físicas/reservadas/disponibles, mínimo y reposición sugerida. Inicio muestra el aviso con los totales. Se actualiza cada minuto y al recuperar el foco. ADMIN puede gestionar inventario y crear compras; SELLER solo consulta inventario. Son avisos dentro de la aplicación, sin envío de correo/push. Ver [contrato backend](../template-NestJS-backend/docs/cash-and-stock-alerts-api.md).
+
+## Auditoría, avisos y promociones
+
+/audit (ADMIN) filtra por entidad/registro/responsable y muestra cambios anteriores/nuevos. /notifications muestra avisos propios CUSTOMER y entrega/reintentos de correo ADMIN. La campana CUSTOMER indica avisos sin leer. /promotions administra configuración ADMIN y consulta promociones elegibles SELLER. Nueva venta permite una promoción porcentual; detalle muestra el descuento histórico. Fechas en America/La_Paz y vista previa con BigInt/redondeo por unidad.
+
+Pruebas de lógica: Node 24, `node --test tests/promotion.test.mjs`. Ver [contrato y alcance](../template-NestJS-backend/docs/admin-features-api.md). No se aplican promociones a pedidos de autoservicio en esta versión.
