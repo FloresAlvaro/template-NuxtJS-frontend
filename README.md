@@ -35,6 +35,12 @@ No expongas el backend ni credenciales mediante `runtimeConfig.public`.
 
 ## Compilación y publicación
 
+Para desplegar ambos repositorios con Docker y HTTPS, consulta la
+[guía completa de home lab](../template-NestJS-backend/docs/homelab-deployment.md).
+El `Dockerfile` de este repositorio compila Nuxt dentro de Linux y ejecuta la
+salida SSR como usuario `node`. El Compose, Caddy y procedimientos de recuperación
+están en `deploy/homelab-caddy` del backend; requieren ambos checkouts como hermanos.
+
 ```bash
 pnpm typecheck
 pnpm build
@@ -186,6 +192,11 @@ Los formularios y las reglas específicas de cada entidad siguen separados. La A
 
 
 ## Pedidos, reportes y recuperación
+
+La lista de pedidos conserva página y estado en la URL, también al abrir un
+detalle y usar Volver a pedidos o el breadcrumb. Cambiar el estado vuelve a la
+primera página. Actualizar el detalle mantiene montado el formulario de operación
+para conservar la acción, el motivo y la confirmación durante la consulta.
 
 - El cliente autenticado agrega productos desde Catálogo y confirma un pedido de retiro en tienda. Mis pedidos permite consultar estado, reserva, importes y cancelar pedidos pendientes.
 - ADMIN/SELLER consultan Pedidos, confirman reservas, preparan y entregan. La confirmación crea la venta; su enlace permite registrar el cobro. Solo se habilita entrega con saldo cero. Para anular después de confirmar, ADMIN utiliza la anulación de la venta.
