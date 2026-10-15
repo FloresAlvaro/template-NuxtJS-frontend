@@ -295,3 +295,9 @@ locales que aparenten consultar todas las cuentas. Verificación: typecheck/buil
 y revisión de la versión compilada con una API de solo lectura, usuarios ficticios,
 modales y ambos temas en escritorio/móvil. No se crearon cuentas ni se
 restablecieron contraseñas reales durante la revisión.
+
+## Caja y alertas operativas
+
+/cash permite abrir el turno propio, gestionar efectivo, consultar el historial y cerrar con arqueo. ADMIN administra cajas y consulta todos los turnos; SELLER solo los propios. El efectivo esperado excluye tarjeta y transferencia. Cobros y reembolsos desde ventas exigen turno abierto y envían su identificador. Reintentos conservan UUID y contenido tras recargar.
+
+/stock-alerts ofrece búsqueda SKU/nombre, filtros de agotados/stock bajo, existencias físicas/reservadas/disponibles, mínimo y reposición sugerida. Inicio muestra el aviso con los totales. Se actualiza cada minuto y al recuperar el foco. ADMIN puede gestionar inventario y crear compras; SELLER solo consulta inventario. Son avisos dentro de la aplicación, sin envío de correo/push. Ver [contrato backend](../template-NestJS-backend/docs/cash-and-stock-alerts-api.md).

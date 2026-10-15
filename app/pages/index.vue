@@ -30,6 +30,7 @@ const shortcuts = computed(() => auth.isStaff.value ? [
         </div>
       </div>
     </section>
+    <StockAlertNotice v-if="auth.isStaff.value" />
     <section aria-labelledby="shortcuts-title">
       <div class="mb-5"><p class="section-eyebrow text-primary">{{ auth.isStaff.value ? 'Accesos rápidos' : 'Todo empieza aquí' }}</p><h2 id="shortcuts-title" class="mt-2 text-2xl font-bold tracking-tight">{{ auth.isStaff.value ? '¿Qué necesitas hacer?' : 'Una forma sencilla de comprar' }}</h2></div>
       <div class="grid gap-4 md:grid-cols-3">

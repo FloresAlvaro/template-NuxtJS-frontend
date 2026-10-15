@@ -34,6 +34,7 @@ export interface SalePage {
 }
 
 export interface SaleOperationApi {
+  cashMovement: {shiftId:number}|null
   operationId: number
   kind: 'PAYMENT' | 'REFUND' | 'RETURN' | 'CANCEL'
   amount: string

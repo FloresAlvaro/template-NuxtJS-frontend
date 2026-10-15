@@ -7,6 +7,8 @@ export default defineNuxtRouteMiddleware(async (to) => {
     '/products',
     '/customers',
     '/sales',
+    '/cash',
+    '/stock-alerts',
   ].some((path) => to.path === path || to.path.startsWith(`${path}/`))
   const admin = ['/users', '/reports', '/suppliers', '/purchases'].some(
     path => to.path === path || to.path.startsWith(`${path}/`),

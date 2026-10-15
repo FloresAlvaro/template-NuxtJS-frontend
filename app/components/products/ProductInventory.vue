@@ -96,17 +96,17 @@ async function saveMinimum() {
       <p class="text-lg font-semibold">Disponible para venta: {{ inventory.availableQuantity }}</p>
       <UBadge
         :color="
-          inventory.quantity === 0
+          inventory.availableQuantity === 0
             ? 'error'
-            : inventory.quantity <= inventory.minStock
+            : inventory.availableQuantity <= inventory.minStock
               ? 'warning'
               : 'success'
         "
       >
         {{
-          inventory.quantity === 0
+          inventory.availableQuantity === 0
             ? 'Agotado'
-            : inventory.quantity <= inventory.minStock
+            : inventory.availableQuantity <= inventory.minStock
               ? 'Stock bajo'
               : 'Disponible'
         }}
@@ -159,7 +159,7 @@ async function saveMinimum() {
         >
       </form>
       <form class="flex items-end gap-3 border-t border-default pt-4" @submit.prevent="saveMinimum">
-        <UFormField label="Stock mínimo" help="Se avisa cuando la cantidad llega a este valor.">
+        <UFormField label="Stock mínimo" help="Se avisa cuando la cantidad disponible llega a este valor.">
           <UInput v-model="minStock" inputmode="numeric" :disabled="saving" />
         </UFormField>
         <UButton

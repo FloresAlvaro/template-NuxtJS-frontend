@@ -174,3 +174,9 @@ pnpm run build
 - En la entrega resume el resultado, las verificaciones realizadas y cualquier
   pendiente concreto. No declares que frontend y backend están a la par sin
   comparar sus funciones, contratos y permisos actuales.
+
+## Caja y alertas
+
+- Los nuevos cobros/reembolsos desde ventas requieren turno propio abierto y cashShiftId explícito. Conserva el payload guardado al reintentar aunque el turno haya cerrado.
+- En caja, separa efectivo de tarjeta/transferencia; usa el resumen del servidor para arqueo. Envía expectedLastMovementId al cerrar y exige actualizar ante conflicto. El cierre es definitivo.
+- Alertas operativas usan /inventory/alerts y stock disponible después de reservas, con resumen global y paginación filtrada. Mantén la limpieza de timers/listeners de useLiveRefresh.

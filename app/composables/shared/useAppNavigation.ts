@@ -15,6 +15,7 @@ export const useAppNavigation = () => {
       {
         label: 'Operaciones',
         items: [
+          { label: 'Caja y turnos', to: '/cash', icon: 'i-lucide-vault' },
           { label: 'Ventas', to: '/sales', icon: 'i-lucide-receipt' },
           { label: 'Pedidos', to: '/orders', icon: 'i-lucide-shopping-bag' },
           { label: 'Clientes', to: '/customers', icon: 'i-lucide-users' },
@@ -23,6 +24,7 @@ export const useAppNavigation = () => {
       {
         label: 'Catálogo de gestión',
         items: [
+          { label: 'Alertas de stock', to: '/stock-alerts', icon: 'i-lucide-triangle-alert' },
           { label: 'Productos', to: '/products', icon: 'i-lucide-package' },
           { label: 'Categorías', to: '/categories', icon: 'i-lucide-layers' },
           { label: 'Subcategorías', to: '/sub-categories', icon: 'i-lucide-list-tree' },
