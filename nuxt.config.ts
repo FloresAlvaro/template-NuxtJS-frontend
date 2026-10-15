@@ -24,6 +24,7 @@ export default defineNuxtConfig({
   },
   runtimeConfig: {
     authProxySecret: '',
+    trustedProxyIp: '',
     backendApiBase: 'http://localhost:3001/api',
     public: {
       apiBase: '/api',
