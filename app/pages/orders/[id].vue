@@ -2,6 +2,10 @@
 import type { TableColumn } from '@nuxt/ui'
 import type { OrderApi } from '~/types/order'
 const route = useRoute()
+const listLocation = computed(() => ({
+  path: '/orders',
+  query: { page: route.query.page, status: route.query.status },
+}))
 const { isStaff } = useAuth()
 const { data, pending, error, refresh } = await useApiFetch<OrderApi>(
   () => `/orders/${String(route.params.id)}`,
@@ -36,7 +40,7 @@ const auditColumns: TableColumn<NonNullable<OrderApi['operations']>[number]>[] =
     <UBreadcrumb
       :items="[
         { label: 'Inicio', to: '/' },
-        { label: isStaff ? 'Pedidos' : 'Mis pedidos', to: '/orders' },
+        { label: isStaff ? 'Pedidos' : 'Mis pedidos', to: listLocation },
         { label: `Pedido #${route.params.id}` },
       ]"
     />
@@ -52,8 +56,8 @@ const auditColumns: TableColumn<NonNullable<OrderApi['operations']>[number]>[] =
       color="error"
       :title="getApiErrorMessage(error, 'No se pudo consultar el pedido')"
     />
-    <p v-else-if="pending" role="status">Cargando pedido...</p>
-    <template v-else-if="data">
+    <p v-if="pending" role="status">Cargando pedido...</p>
+    <template v-if="data">
       <h1 class="text-xl font-bold">Pedido #{{ data.orderId }}</h1>
       <p class="font-semibold">
         {{ orderStatusLabels[data.status] }} · Retiro en tienda
@@ -102,6 +106,7 @@ const auditColumns: TableColumn<NonNullable<OrderApi['operations']>[number]>[] =
         </div></UCard
       >
       <OrderActions
+        :key="data.orderId"
         :order="data"
         @updated="data = $event"
         @refresh="refresh()"
@@ -110,7 +115,7 @@ const auditColumns: TableColumn<NonNullable<OrderApi['operations']>[number]>[] =
         ><h2 class="font-semibold">Historial del pedido</h2>
         <GenericTable :data="data.operations" :columns="auditColumns"
       /></template>
-      <UButton to="/orders" color="neutral" variant="outline"
+      <UButton :to="listLocation" color="neutral" variant="outline"
         >Volver a pedidos</UButton
       >
     </template>

@@ -3,7 +3,21 @@ import type { TableColumn } from '@nuxt/ui'
 import type { OrderApi, OrderPage, OrderStatus } from '~/types/order'
 const route = useRoute()
 const { isStaff } = useAuth()
-const page = ref(1)
+const page = computed({
+  get: () => {
+    const value = route.query.page
+    const parsed =
+      typeof value === 'string' && /^[1-9]\d*$/.test(value)
+        ? Number(value)
+        : 1
+    return Number.isSafeInteger(parsed) ? parsed : 1
+  },
+  set: (value: number) => {
+    void navigateTo({
+      query: { ...route.query, page: value > 1 ? String(value) : undefined },
+    })
+  },
+})
 const status = computed({
   get: () =>
     typeof route.query.status === 'string' &&
@@ -12,17 +26,14 @@ const status = computed({
       : 'all',
   set: (value) => {
     void navigateTo({
-      query: { ...route.query, status: value === 'all' ? undefined : value },
+      query: {
+        ...route.query,
+        page: undefined,
+        status: value === 'all' ? undefined : value,
+      },
     })
   },
 })
-watch(
-  status,
-  () => {
-    page.value = 1
-  },
-  { flush: 'sync' },
-)
 const query = computed(() => ({
   page: page.value,
   limit: 20,
@@ -102,7 +113,7 @@ const columns: TableColumn<OrderApi>[] = [
       :columns="columns"
       ><template #actions="{ row }"
         ><UButton
-          :to="`/orders/${row.original.orderId}`"
+          :to="{ path: `/orders/${row.original.orderId}`, query: { page: page > 1 ? String(page) : undefined, status: status === 'all' ? undefined : status } }"
           icon="i-lucide-eye"
           color="neutral"
           variant="soft"
